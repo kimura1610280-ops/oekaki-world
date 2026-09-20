@@ -28,6 +28,7 @@
   --accent-2:#2E86D6;
   --yellow:#FFC53D;
   --danger:#D8503C;
+  --danger-bg:#FFE7E3;
   --btn-drop:rgba(42,42,51,.22);
   /* 紙の上はどちらのテーマでも紙の色（クレヨンが見えるため） */
   --paper:#FFFDF6;
@@ -45,6 +46,7 @@
     --ink:#F3EFE5;
     --ink-2:#A9A296;
     --line:rgba(243,239,229,.2);
+    --danger-bg:#4C2C28;
     --btn-drop:rgba(0,0,0,.5);
   }
 }
@@ -56,6 +58,7 @@
   --ink:#F3EFE5;
   --ink-2:#A9A296;
   --line:rgba(243,239,229,.2);
+  --danger-bg:#4C2C28;
   --btn-drop:rgba(0,0,0,.5);
 }
 
@@ -210,6 +213,9 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
 .zzz img{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none;}
 .zzz::after{content:"💤";position:absolute;top:5px;right:7px;font-size:14px;}
 .sheetBtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.grid.deleting .zzz{background:var(--danger-bg);box-shadow:0 3px 0 rgba(216,80,60,.5);}
+.grid.deleting .zzz::after{content:"\2715";color:var(--danger);font-weight:800;font-size:17px;top:3px;right:8px;}
+.chip[aria-pressed="true"]{background:var(--danger);color:#fff;}
 
 /* ---------- トースト ---------- */
 .toast{
@@ -223,11 +229,17 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
 .toast.on{opacity:1;}
 
 @media (max-width:520px){
-  :root{--tap:50px;}
-  .crayon{width:42px;height:42px;}
-  .brushBox{min-width:66px;}
-  .tool{padding:0 12px;font-size:14px;}
-  .big{font-size:16px;padding:0 16px;}
+  :root{--tap:46px;}
+  .crayon{width:38px;height:38px;}
+  .palette{gap:7px;}
+  .row{gap:7px;}
+  .tools{gap:7px;padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));}
+  .paperWrap{margin:8px 10px 0;}
+  .brushBox{min-width:56px;}
+  .brushName{font-size:10px;}
+  .sz{width:40px;}
+  .tool{padding:0 10px;font-size:13px;}
+  .big{font-size:15px;padding:0 14px;}
 }
 @media (prefers-reduced-motion:reduce){
   *{transition-duration:.001ms !important;}
@@ -250,10 +262,11 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
     <div class="sheet" id="sleepBox" hidden>
       <div class="sheetCard">
         <div class="sheetTitle">💤 おやすみ中の なかま</div>
-        <div class="sheetSub">おこしたい子を タップしてね</div>
+        <div class="sheetSub" id="sleepSub">おこしたい子を タップしてね</div>
         <div class="grid" id="sleepGrid"></div>
         <div class="sheetBtns">
           <button class="chip" id="wakeAllBtn">☀️ ぜんぶ おこす</button>
+          <button class="chip" id="delModeBtn" aria-pressed="false">🗑 けす</button>
           <button class="chip" id="closeSleepBtn">とじる</button>
         </div>
       </div>
@@ -280,7 +293,9 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
           <span class="brushName" id="brushName">あか</span>
         </div>
         <div class="sizes" id="sizes"></div>
+        <button class="tool" id="fillBtn" aria-pressed="false">🪣 ぬりつぶし</button>
         <button class="tool" id="eraserBtn" aria-pressed="false">けしゴム</button>
+        <button class="tool" id="tidyBtn">✨ きれいに</button>
         <button class="tool" id="undoBtn">↩︎ もどす</button>
         <button class="tool warn" id="clearBtn">ぜんぶ けす</button>
         <div class="spacer"></div>
@@ -369,7 +384,7 @@ var COLORS=[
   ['ピンク','#F07AB0'],['ちゃいろ','#8B5A2B'],['くろ','#2B2B33'],['しろ','#FFFFFF']
 ];
 var SIZES=[['ほそい',7],['ふつう',16],['ふとい',32]];
-var color=COLORS[0][1], colorName=COLORS[0][0], size=SIZES[1][1], erasing=false;
+var color=COLORS[0][1], colorName=COLORS[0][0], size=SIZES[1][1], erasing=false, filling=false;
 var strokes=[], cur=null, penSeen=false, activeId=null;
 
 var palette=$('palette');
@@ -409,7 +424,7 @@ function updateBrush(){
   dot.style.width=d+'px'; dot.style.height=d+'px';
   dot.style.background= erasing ? 'var(--line)' : color;
   dot.style.boxShadow = (color==='#FFFFFF'&&!erasing) ? '0 0 0 2px var(--line)' : 'none';
-  $('brushName').textContent = erasing ? 'けしゴム' : colorName;
+  $('brushName').textContent = erasing ? 'けしゴム' : (filling ? 'ぬる' : colorName);
 }
 updateBrush();
 
@@ -435,9 +450,33 @@ function drawStroke(s){
 function redrawAll(){
   dctx.globalCompositeOperation='source-over';
   dctx.clearRect(0,0,DW,DH);
-  for(var i=0;i<strokes.length;i++) drawStroke(strokes[i]);
+  for(var i=0;i<strokes.length;i++){
+    var s=strokes[i];
+    if(s.type==='img'){
+      dctx.globalCompositeOperation='source-over';
+      dctx.clearRect(0,0,DW,DH);
+      dctx.drawImage(s.img,0,0,DW,DH);
+    }else{
+      drawStroke(s);
+    }
+  }
   dctx.globalCompositeOperation='source-over';
   $('hint').style.display = strokes.length ? 'none' : 'flex';
+}
+/* ぬりつぶしは線ではないので、その時点の絵を1枚の画像として履歴に積む。
+   古いスナップショットは新しいものに焼き込まれているので捨ててよい（表示は変わらない）。 */
+function pushSnapshot(){
+  var snap=document.createElement('canvas');
+  snap.width=dcv.width; snap.height=dcv.height;
+  snap.getContext('2d').drawImage(dcv,0,0);
+  strokes.push({type:'img', img:snap});
+  var idx=[], i;
+  for(i=0;i<strokes.length;i++) if(strokes[i].type==='img') idx.push(i);
+  while(idx.length>3){
+    strokes=strokes.slice(idx[1]);
+    idx=[];
+    for(i=0;i<strokes.length;i++) if(strokes[i].type==='img') idx.push(i);
+  }
 }
 function segment(s){
   var p=s.pts, n=p.length;
@@ -453,9 +492,98 @@ function segment(s){
   dctx.stroke();
   dctx.globalCompositeOperation='source-over';
 }
+function hexRGB(h){
+  return { r:parseInt(h.slice(1,3),16), g:parseInt(h.slice(3,5),16), b:parseInt(h.slice(5,7),16) };
+}
+/* タップした場所とつながっている範囲を塗る（囲みの中を塗りつぶす） */
+function floodFill(px,py,hex){
+  var W=dcv.width, H=dcv.height, id;
+  try{ id=dctx.getImageData(0,0,W,H); }catch(err){ return false; }
+  var d=id.data;
+  var x0=Math.round(px*DPR), y0=Math.round(py*DPR);
+  if(x0<0||y0<0||x0>=W||y0>=H) return false;
+  var si=(y0*W+x0)*4;
+  var sr=d[si], sg=d[si+1], sb=d[si+2], sa=d[si+3];
+  var fc=hexRGB(hex);
+  if(sa>200 && Math.abs(sr-fc.r)+Math.abs(sg-fc.g)+Math.abs(sb-fc.b)<24) return false;
+  var openStart = sa<30;
+  function match(j){
+    var a=d[j+3];
+    if(openStart) return a<90;   // 透明側から塗る。輪郭のふちも少し食べてスキマを減らす
+    if(a<30) return false;
+    return Math.abs(d[j]-sr)+Math.abs(d[j+1]-sg)+Math.abs(d[j+2]-sb)+Math.abs(a-sa) < 120;
+  }
+  var seen=new Uint8Array(W*H);
+  var stack=[x0,y0], filled=0;
+  while(stack.length){
+    var y=stack.pop(), x=stack.pop();
+    if(seen[y*W+x]) continue;
+    var xl=x;
+    while(xl>=0 && !seen[y*W+xl] && match((y*W+xl)*4)) xl--;
+    xl++;
+    var xr=x;
+    while(xr<W && !seen[y*W+xr] && match((y*W+xr)*4)) xr++;
+    xr--;
+    if(xr<xl) continue;
+    for(var xx=xl;xx<=xr;xx++){
+      var k=y*W+xx; seen[k]=1;
+      var j=k*4;
+      d[j]=fc.r; d[j+1]=fc.g; d[j+2]=fc.b; d[j+3]=255;
+      filled++;
+    }
+    for(var s2=-1;s2<=1;s2+=2){
+      var ny=y+s2;
+      if(ny<0||ny>=H) continue;
+      for(var x2=xl;x2<=xr;x2++){
+        var k2=ny*W+x2;
+        if(!seen[k2] && match(k2*4)) stack.push(x2,ny);
+      }
+    }
+  }
+  if(!filled) return false;
+  dctx.putImageData(id,0,0);
+  return true;
+}
+/* 直前に描いた線を、まんまる／まっすぐに整える */
+function tidyLast(){
+  var s=strokes[strokes.length-1];
+  if(!s || s.type==='img' || !s.pts || s.pts.length<3){
+    toast('さいごに かいた 線を きれいにするよ'); return;
+  }
+  var p=s.pts, n=p.length, k, len=0;
+  for(k=1;k<n;k++) len+=Math.hypot(p[k].x-p[k-1].x, p[k].y-p[k-1].y);
+  if(len<24){ toast('もうすこし ながく かいてね'); return; }
+  var gap=Math.hypot(p[n-1].x-p[0].x, p[n-1].y-p[0].y);
+  if(gap < len*0.3){
+    var cx=0, cy=0;
+    for(k=0;k<n;k++){ cx+=p[k].x; cy+=p[k].y; }
+    cx/=n; cy/=n;
+    var r=0;
+    for(k=0;k<n;k++) r+=Math.hypot(p[k].x-cx, p[k].y-cy);
+    r/=n;
+    var np=[];
+    for(k=0;k<=72;k++){
+      var a=k/72*Math.PI*2;
+      np.push({ x:cx+Math.cos(a)*r, y:cy+Math.sin(a)*r });
+    }
+    s.pts=np;
+    toast('まんまるに なった！');
+  }else{
+    s.pts=[{x:p[0].x,y:p[0].y},{x:p[n-1].x,y:p[n-1].y}];
+    toast('まっすぐに なった！');
+  }
+  redrawAll(); sfx.tap();
+}
 dcv.addEventListener('pointerdown',function(e){
   if(e.pointerType==='pen') penSeen=true;
   if(penSeen && e.pointerType==='touch') return;
+  if(filling){
+    ac();
+    $('hint').style.display='none';
+    var fp=pos(dcv,e);
+    if(floodFill(fp.x,fp.y,color)){ pushSnapshot(); sfx.tap(); }
+    return;
+  }
   if(activeId!==null) return;
   activeId=e.pointerId;
   try{ dcv.setPointerCapture(e.pointerId); }catch(err){}
@@ -486,9 +614,18 @@ window.addEventListener('pointerup',endStroke);
 
 $('eraserBtn').addEventListener('click',function(){
   erasing=!erasing;
+  if(erasing){ filling=false; $('fillBtn').setAttribute('aria-pressed','false'); }
   this.setAttribute('aria-pressed', erasing?'true':'false');
   updateBrush(); sfx.tap();
 });
+$('fillBtn').addEventListener('click',function(){
+  filling=!filling;
+  if(filling){ erasing=false; $('eraserBtn').setAttribute('aria-pressed','false'); }
+  this.setAttribute('aria-pressed', filling?'true':'false');
+  updateBrush(); sfx.tap();
+  if(filling) toast('ぬりたい ところを タップしてね');
+});
+$('tidyBtn').addEventListener('click',tidyLast);
 $('undoBtn').addEventListener('click',function(){
   if(!strokes.length) return;
   strokes.pop(); redrawAll(); sfx.tap();
@@ -844,32 +981,56 @@ function wakeUp(sp, x){
   c.vy=-90; burst(c.x,c.y,'#FFE9A8'); sfx.jump();
   return c;
 }
+var deleteMode=false;
+function syncDeleteUI(){
+  var btn=$('delModeBtn');
+  btn.setAttribute('aria-pressed', deleteMode?'true':'false');
+  btn.textContent = deleteMode ? '↩︎ やめる' : '🗑 けす';
+  $('sleepGrid').classList.toggle('deleting', deleteMode);
+  $('sleepSub').textContent = deleteMode
+    ? 'けしたい子を タップ（もとに もどせません）'
+    : 'おこしたい子を タップしてね';
+  $('wakeAllBtn').hidden = deleteMode;
+}
 function renderSleepBox(){
   var g=$('sleepGrid');
   g.innerHTML='';
   sleeping.forEach(function(sp,i){
     var b=document.createElement('button');
     b.className='zzz';
-    b.setAttribute('aria-label','この子を おこす');
+    b.setAttribute('aria-label', deleteMode ? 'この子を けす' : 'この子を おこす');
     var im=document.createElement('img');
     im.alt=''; im.src=srcOf(sp)||'';
     b.appendChild(im);
     b.addEventListener('click',function(){
       var one=sleeping.splice(i,1)[0];
       if(!one) return;
-      ac(); wakeUp(one); updateSleep(); save();
-      if(sleeping.length) renderSleepBox(); else closeSleepBox();
+      ac();
+      if(deleteMode){
+        sfx.bye();
+        toast('さようなら');
+      }else{
+        wakeUp(one);
+      }
+      updateSleep(); save();
+      if(sleeping.length){ renderSleepBox(); }
+      else{ deleteMode=false; syncDeleteUI(); closeSleepBox(); }
     });
     g.appendChild(b);
   });
+  syncDeleteUI();
 }
 function openSleepBox(){
   if(!sleeping.length) return;
-  ac(); renderSleepBox();
+  ac(); deleteMode=false; renderSleepBox();
   $('sleepBox').hidden=false;
   sfx.tap();
 }
-function closeSleepBox(){ $('sleepBox').hidden=true; }
+function closeSleepBox(){ deleteMode=false; syncDeleteUI(); $('sleepBox').hidden=true; }
+$('delModeBtn').addEventListener('click',function(){
+  deleteMode=!deleteMode;
+  renderSleepBox(); sfx.tap();
+});
 $('wakeBtn').addEventListener('click',openSleepBox);
 $('closeSleepBtn').addEventListener('click',function(){ closeSleepBox(); sfx.tap(); });
 $('sleepBox').addEventListener('click',function(e){ if(e.target===this) closeSleepBox(); });

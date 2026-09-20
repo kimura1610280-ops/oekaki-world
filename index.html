@@ -236,6 +236,7 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
 .opa input[type="range"]{flex:1;min-width:56px;height:30px;accent-color:var(--accent);cursor:pointer;}
 
 /* ---------- おやすみボックス ---------- */
+#namePadBox{z-index:40;}
 .sheet{
   position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;
   background:rgba(18,24,38,.52);padding:16px;
@@ -262,9 +263,42 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
 }
 .zzz:active{transform:translateY(2px) scale(.97);box-shadow:0 1px 0 var(--btn-drop);}
 .zzz img{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none;}
-.zzz::after{content:"💤";position:absolute;top:5px;right:7px;font-size:14px;}
+.whereBadge{position:absolute;top:5px;right:7px;font-size:14px;line-height:1;}
+.zzz.away{opacity:.4;filter:grayscale(1);}
+.zzz.away:active{transform:none;box-shadow:0 3px 0 var(--btn-drop);}
+.nameStrip{
+  position:absolute;left:6px;right:6px;bottom:5px;z-index:2;
+  height:24px;border-radius:9px;padding:0 4px;
+  background:rgba(255,255,255,.93);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;color:#B9AE9A;
+  box-shadow:0 1px 3px rgba(40,35,25,.22);overflow:hidden;
+}
+.nameStrip img{max-height:19px;max-width:100%;object-fit:contain;display:block;}
+/* ずかん */
+.zukanList{display:flex;flex-direction:column;gap:8px;overflow-y:auto;padding:2px;}
+.zRow{
+  display:flex;align-items:center;gap:11px;
+  background:var(--chrome-2);border-radius:14px;padding:8px 12px;
+}
+.zThumb{width:46px;height:46px;flex:none;display:flex;align-items:center;justify-content:center;}
+.zThumb img{max-width:100%;max-height:100%;object-fit:contain;}
+.zInfo{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px;}
+.zName{height:22px;display:flex;align-items:center;}
+.zName img{max-height:22px;max-width:100%;object-fit:contain;}
+.zName span{font-size:12px;font-weight:700;color:var(--ink-2);}
+.zMeta{font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums;}
+/* なまえを かく */
+.padWrap{position:relative;}
+#namePadCv{
+  width:100%;height:120px;display:block;background:var(--paper);
+  border-radius:14px;touch-action:none;box-shadow:inset 0 0 0 2px var(--line);
+}
+.padHint{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:var(--on-paper-2);font-size:15px;font-weight:700;pointer-events:none;
+}
 .sheetBtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
-.zzz.edit::after{content:"\270F\FE0F";}
 .tileWrap{position:relative;}
 .tileWrap .zzz{width:100%;}
 .star{
@@ -322,6 +356,7 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
       <div class="spacer"></div>
       <button class="chip" id="worldBtn">☀️ ひる</button>
       <button class="chip icon" id="soundBtn" aria-label="おと">🔊</button>
+      <button class="chip icon" id="zukanBtn" aria-label="ずかん">📖</button>
       <button class="chip icon" id="fullBtn" aria-label="ぜんがめん">⛶</button>
     </div>
     <div class="tip" id="tip"></div>
@@ -340,6 +375,32 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
           <button class="chip" id="wakeAllBtn">☀️ ぜんぶ おこす</button>
           <button class="chip" id="delModeBtn" aria-pressed="false">🗑 けす</button>
           <button class="chip" id="closeSleepBtn">とじる</button>
+        </div>
+      </div>
+    </div>
+    <div class="sheet" id="zukanBox" hidden>
+      <div class="sheetCard">
+        <div class="sheetTitle">📖 ずかん</div>
+        <div class="sheetSub" id="zukanSub">つくった なかま</div>
+        <div class="zukanList" id="zukanList"></div>
+        <div class="sheetBtns">
+          <button class="chip" id="closeZukanBtn">とじる</button>
+        </div>
+      </div>
+    </div>
+    <div class="sheet" id="namePadBox" hidden>
+      <div class="sheetCard">
+        <div class="sheetTitle">✏️ なまえを かこう</div>
+        <div class="sheetSub">ゆびで かいてね</div>
+        <div class="padWrap">
+          <canvas id="namePadCv"></canvas>
+          <div class="padHint" id="padHint">ここに なまえ</div>
+        </div>
+        <div class="sheetBtns">
+          <button class="chip" id="padClearBtn">けす</button>
+          <button class="chip" id="padDelBtn">なまえを とる</button>
+          <button class="chip" id="padOkBtn">できた</button>
+          <button class="chip" id="padCancelBtn">やめる</button>
         </div>
       </div>
     </div>
@@ -491,6 +552,7 @@ var strokes=[], cur=null, penSeen=false;
 var art=null, actx=null, AW=0, AH=0, ADPR=1;
 var tmp=null, tctx=null, useTmp=false;
 var pendingFav=false;      // なおし中の子の おきにいり状態
+var pendingName=null, pendingBorn=0;
 var editingSp=null;        // なおし中の子そのもの（やめたら戻す）
 var baseLen=0;             // 読み込み直後の履歴の長さ（変更の有無を見る）
 var zoom=1, baseScale=1, panX=0, panY=0;
@@ -924,12 +986,14 @@ function extract(){
 function newDrawing(){
   strokes=[]; cur=null; drawId=null; gesture=null; ptrs={}; ptrCount=0;
   art=null; tmp=null; tctx=null; useTmp=false; zoom=1;
-  pendingFav=false; editingSp=null; baseLen=0;
+  pendingFav=false; pendingName=null; pendingBorn=0; editingSp=null; baseLen=0;
 }
 /* すでにいる子を紙に読み込んで、なおせるようにする */
 function loadForEdit(sp){
   ensureArt();
   pendingFav = !!sp.fav;
+  pendingName = sp.name||null;
+  pendingBorn = sp.born||0;
   editingSp = sp;
   var maxDim=Math.min(AW,AH)*0.62;
   var k=maxDim/Math.max(sp.w, sp.h);
@@ -1131,10 +1195,18 @@ function toCanvas(im){
   c.getContext('2d').drawImage(im,0,0);
   return c;
 }
+/* いきものを配列間で移すときは、必ずこれで写す（持ちものを落とさないため） */
+function spriteOf(o){
+  return {
+    img:o.img, src:o.src||null, w:o.w, h:o.h,
+    fav:!!o.fav, name:o.name||null, born:o.born||Date.now()
+  };
+}
 function makeCreature(sp, opts){
   opts=opts||{};
   return {
-    img:sp.img, src:sp.src||null, w:sp.w, h:sp.h, fav:!!sp.fav,
+    img:sp.img, src:sp.src||null, w:sp.w, h:sp.h,
+    fav:!!sp.fav, name:sp.name||null, born:sp.born||Date.now(),
     x: opts.x!==undefined?opts.x: spawnPos().x,
     y: opts.y!==undefined?opts.y: spawnPos().y,
     vx:(Math.random()*2-1)*180, vy:0,
@@ -1147,7 +1219,7 @@ function addCreature(sp, opts){
   creatures.push(c);
   while(creatures.length>12){
     var old=creatures.shift();
-    sleeping.push({img:old.img, src:old.src, w:old.w, h:old.h, fav:old.fav});
+    sleeping.push(spriteOf(old));
   }
   trimSleeping();
   updateCount(); updateSleep();
@@ -1155,7 +1227,7 @@ function addCreature(sp, opts){
 }
 function updateCount(){
   $('count').textContent = creatures.length + ' ひき';
-  $('editBtn').hidden = (creatures.length + sleeping.length) === 0;
+  $('editBtn').hidden = allCreatures().length === 0;
 }
 
 function burst(x,y,col){
@@ -1448,6 +1520,8 @@ $('goBtn').addEventListener('click',function(){
   var sp=extract();
   if(!sp){ toast('まだ なにも かいてないよ！'); return; }
   sp.fav = pendingFav;
+  sp.name = pendingName;
+  sp.born = pendingBorn || Date.now();
   show('stage');
   requestAnimationFrame(function(){
     var v=viewCenter();
@@ -1470,7 +1544,7 @@ $('clearAllBtn').addEventListener('click',function(){
   for(var i=0;i<creatures.length;i++){
     var c=creatures[i];
     burst(c.x,c.y,'#CFE3F5');
-    sleeping.push({img:c.img, src:c.src, w:c.w, h:c.h, fav:c.fav});
+    sleeping.push(spriteOf(c));
   }
   trimSleeping();
   creatures.length=0; updateCount(); updateSleep(); sfx.bye(); save();
@@ -1521,16 +1595,11 @@ function syncDeleteUI(){
 function renderSleepBox(){
   var g=$('sleepGrid');
   g.innerHTML='';
-  sleeping.slice().sort(favFirst).forEach(function(sp){
-    var wrap=document.createElement('div');
-    wrap.className='tileWrap';
-    var b=document.createElement('button');
-    b.className='zzz';
-    b.setAttribute('aria-label', deleteMode ? 'この子を けす' : 'この子を おこす');
-    var im=document.createElement('img');
-    im.alt=''; im.src=srcOf(sp)||'';
-    b.appendChild(im);
-    b.addEventListener('click',function(){
+  var canAct=function(e){ return e.where===null; };
+  sortTiles(allCreatures(), canAct).forEach(function(entry){
+    var sp=entry.sp, active=canAct(entry);
+    var badge = (deleteMode && active) ? '✕' : null;
+    g.appendChild(makeTile(entry, active, badge, function(){
       if(deleteMode && sp.fav){
         toast('⭐の子は けせないよ。☆を おしてからね'); return;
       }
@@ -1541,12 +1610,8 @@ function renderSleepBox(){
       if(deleteMode){ sfx.bye(); toast('さようなら'); }
       else{ wakeUp(sp); }
       updateSleep(); save();
-      if(sleeping.length){ renderSleepBox(); }
-      else{ deleteMode=false; syncDeleteUI(); closeSleepBox(); }
-    });
-    wrap.appendChild(b);
-    wrap.appendChild(starBtn(sp, renderSleepBox));
-    g.appendChild(wrap);
+      renderSleepBox();
+    }, renderSleepBox));
   });
   syncDeleteUI();
 }
@@ -1563,48 +1628,210 @@ $('delModeBtn').addEventListener('click',function(){
 });
 $('wakeBtn').addEventListener('click',openSleepBox);
 
-/* ---------- すでにいる子を なおす ---------- */
-function allSprites(){
-  var a=[], i;
-  for(i=0;i<creatures.length;i++) a.push({ sp:creatures[i], from:'stage' });
-  for(i=0;i<sleeping.length;i++) a.push({ sp:sleeping[i], from:'sleep' });
-  a.sort(function(x,y){
-    var f=(y.sp.fav?1:0)-(x.sp.fav?1:0);
-    if(f) return f;
-    return (x.from==='stage'?0:1)-(y.from==='stage'?0:1);
+/* ====================== なまえを てがきで ====================== */
+var padCv=$('namePadCv'), padCtx=null, padDPR=1;
+var padTarget=null, padAfter=null, padDrawn=false, padId=null, padLast=null;
+function padFit(){
+  var r=padCv.getBoundingClientRect();
+  padDPR=Math.min(window.devicePixelRatio||1,2.5);
+  padCv.width=Math.max(1,Math.round(r.width*padDPR));
+  padCv.height=Math.max(1,Math.round(r.height*padDPR));
+  padCtx=padCv.getContext('2d',{willReadFrequently:true});
+  padCtx.setTransform(padDPR,0,0,padDPR,0,0);
+  padCtx.lineCap='round'; padCtx.lineJoin='round';
+  padCtx.lineWidth=7; padCtx.strokeStyle='#2B2B33'; padCtx.fillStyle='#2B2B33';
+}
+function padClear(){
+  if(!padCtx) return;
+  padCtx.save(); padCtx.setTransform(1,0,0,1,0,0);
+  padCtx.clearRect(0,0,padCv.width,padCv.height); padCtx.restore();
+  padDrawn=false; $('padHint').style.display='flex';
+}
+padCv.addEventListener('pointerdown',function(e){
+  if(padId!==null || !padCtx) return;
+  padId=e.pointerId;
+  try{ padCv.setPointerCapture(e.pointerId); }catch(err){}
+  var q=pos(padCv,e);
+  padLast=q; padDrawn=true;
+  $('padHint').style.display='none';
+  padCtx.beginPath(); padCtx.arc(q.x,q.y,3.5,0,6.3); padCtx.fill();
+});
+padCv.addEventListener('pointermove',function(e){
+  if(e.pointerId!==padId) return;
+  var q=pos(padCv,e);
+  padCtx.beginPath(); padCtx.moveTo(padLast.x,padLast.y); padCtx.lineTo(q.x,q.y); padCtx.stroke();
+  padLast=q;
+});
+function padEnd(e){ if(e.pointerId===padId) padId=null; }
+padCv.addEventListener('pointerup',padEnd);
+padCv.addEventListener('pointercancel',padEnd);
+window.addEventListener('pointerup',padEnd);
+function padExtract(){
+  var W=padCv.width, H=padCv.height, data;
+  try{ data=padCtx.getImageData(0,0,W,H).data; }catch(e){ return null; }
+  var minX=W,minY=H,maxX=-1,maxY=-1,x,y;
+  for(y=0;y<H;y++){
+    var row=y*W;
+    for(x=0;x<W;x++) if(data[(row+x)*4+3]>20){
+      if(x<minX)minX=x; if(x>maxX)maxX=x;
+      if(y<minY)minY=y; if(y>maxY)maxY=y;
+    }
+  }
+  if(maxX<0) return null;
+  var pd=Math.round(4*padDPR);
+  minX=Math.max(0,minX-pd); minY=Math.max(0,minY-pd);
+  maxX=Math.min(W-1,maxX+pd); maxY=Math.min(H-1,maxY+pd);
+  var cw=maxX-minX+1, ch=maxY-minY+1;
+  var k=Math.min(1, 72/ch);
+  if(cw*k>560) k=560/cw;
+  var out=document.createElement('canvas');
+  out.width=Math.max(1,Math.round(cw*k)); out.height=Math.max(1,Math.round(ch*k));
+  var o=out.getContext('2d');
+  o.imageSmoothingEnabled=true; o.imageSmoothingQuality='high';
+  o.drawImage(padCv, minX,minY,cw,ch, 0,0,out.width,out.height);
+  return out.toDataURL('image/png');
+}
+function openNamePad(sp, after){
+  padTarget=sp; padAfter=after||function(){};
+  $('namePadBox').hidden=false;
+  ac(); sfx.tap();
+  requestAnimationFrame(function(){ padFit(); padClear(); $('padDelBtn').hidden=!sp.name; });
+}
+function closeNamePad(){ $('namePadBox').hidden=true; padTarget=null; }
+$('padOkBtn').addEventListener('click',function(){
+  if(!padTarget) return;
+  var d = padDrawn ? padExtract() : null;
+  if(!d){ toast('なまえを かいてね'); return; }
+  padTarget.name=d; save();
+  var after=padAfter; closeNamePad(); after();
+  sfx.born(); toast('なまえが ついた！');
+});
+$('padClearBtn').addEventListener('click',function(){ padClear(); sfx.tap(); });
+$('padDelBtn').addEventListener('click',function(){
+  if(!padTarget) return;
+  padTarget.name=null; save();
+  var after=padAfter; closeNamePad(); after();
+  sfx.bye(); toast('なまえを とったよ');
+});
+$('padCancelBtn').addEventListener('click',function(){ closeNamePad(); sfx.tap(); });
+$('namePadBox').addEventListener('click',function(e){ if(e.target===this) closeNamePad(); });
+
+/* ====================== ずかん ====================== */
+function fmtDate(t){
+  var d=new Date(t||Date.now());
+  return (d.getMonth()+1)+'がつ'+d.getDate()+'にち';
+}
+function renderZukan(){
+  var g=$('zukanList');
+  g.innerHTML='';
+  var list=allCreatures().sort(function(x,y){ return (y.sp.born||0)-(x.sp.born||0); });
+  $('zukanSub').textContent = list.length ? ('つくった なかま '+list.length+'ひき') : 'まだ だれも いないよ';
+  list.forEach(function(e){
+    var row=document.createElement('div'); row.className='zRow';
+    var th=document.createElement('div'); th.className='zThumb';
+    var im=document.createElement('img'); im.alt=''; im.src=srcOf(e.sp)||''; th.appendChild(im);
+    var info=document.createElement('div'); info.className='zInfo';
+    var nm=document.createElement('div'); nm.className='zName';
+    if(e.sp.name){ var ni=document.createElement('img'); ni.alt=''; ni.src=e.sp.name; nm.appendChild(ni); }
+    else{ var t=document.createElement('span'); t.textContent='なまえ なし'; nm.appendChild(t); }
+    var meta=document.createElement('div'); meta.className='zMeta';
+    meta.textContent = fmtDate(e.sp.born)+'　'+(e.where ? worldName(e.where) : '💤 おやすみ中');
+    info.appendChild(nm); info.appendChild(meta);
+    row.appendChild(th); row.appendChild(info);
+    if(e.sp.fav){
+      var st=document.createElement('span'); st.textContent='⭐';
+      st.style.fontSize='16px'; st.style.flex='none';
+      row.appendChild(st);
+    }
+    g.appendChild(row);
   });
+}
+$('zukanBtn').addEventListener('click',function(){ ac(); renderZukan(); $('zukanBox').hidden=false; sfx.tap(); });
+$('closeZukanBtn').addEventListener('click',function(){ $('zukanBox').hidden=true; sfx.tap(); });
+$('zukanBox').addEventListener('click',function(e){ if(e.target===this) $('zukanBox').hidden=true; });
+
+/* ---------- すでにいる子を なおす ---------- */
+function worldOf(id){
+  for(var i=0;i<WORLDS.length;i++) if(WORLDS[i].id===id) return WORLDS[i];
+  return null;
+}
+function worldEmoji(id){ var w=worldOf(id); return w ? w.label.split(' ')[0] : '?'; }
+function worldName(id){ var w=worldOf(id); return w ? w.label : '?'; }
+/* いま存在する子ぜんぶ。where はいるワールドのid、おやすみ中は null */
+function allCreatures(){
+  var a=[], i, k;
+  for(k in worldStore){
+    var live=worldStore[k].live;
+    for(i=0;i<live.length;i++) a.push({ sp:live[i], where:k });
+  }
+  for(i=0;i<sleeping.length;i++) a.push({ sp:sleeping[i], where:null });
   return a;
+}
+/* さわれる子を先に、次におきにいり、次に新しい順 */
+function sortTiles(list, canAct){
+  return list.slice().sort(function(x,y){
+    var a=(canAct(y)?1:0)-(canAct(x)?1:0); if(a) return a;
+    var f=(y.sp.fav?1:0)-(x.sp.fav?1:0); if(f) return f;
+    return (y.sp.born||0)-(x.sp.born||0);
+  });
+}
+/* 一覧のタイル1枚。よそのワールドにいる子はグレーにして、どこにいるか出す */
+function makeTile(entry, active, badge, onAct, rerender){
+  var sp=entry.sp;
+  var wrap=document.createElement('div');
+  wrap.className='tileWrap';
+  var b=document.createElement('button');
+  b.className='zzz'+(active?'':' away');
+  b.setAttribute('aria-label', active ? 'この子を えらぶ' : (entry.where ? worldName(entry.where)+' に いる' : 'おやすみ中'));
+  var im=document.createElement('img');
+  im.alt=''; im.src=srcOf(sp)||'';
+  b.appendChild(im);
+  var bd=document.createElement('span');
+  bd.className='whereBadge';
+  bd.textContent = badge || (entry.where ? worldEmoji(entry.where) : '💤');
+  b.appendChild(bd);
+  b.addEventListener('click',function(){
+    if(!active){
+      toast(entry.where ? 'この子は '+worldName(entry.where)+' に いるよ' : 'この子は おやすみ中だよ');
+      return;
+    }
+    onAct();
+  });
+  var nm=document.createElement('button');
+  nm.className='nameStrip';
+  if(sp.name){
+    var ni=document.createElement('img'); ni.alt=''; ni.src=sp.name; nm.appendChild(ni);
+  }else{
+    nm.textContent='なまえ';
+  }
+  nm.setAttribute('aria-label','なまえを かく');
+  nm.addEventListener('click',function(e){ e.stopPropagation(); openNamePad(sp, rerender); });
+  wrap.appendChild(b);
+  wrap.appendChild(starBtn(sp, rerender));
+  wrap.appendChild(nm);
+  return wrap;
 }
 function renderEditBox(){
   var g=$('editGrid');
   g.innerHTML='';
-  allSprites().forEach(function(it){
-    var wrap=document.createElement('div');
-    wrap.className='tileWrap';
-    var b=document.createElement('button');
-    b.className='zzz edit';
-    b.setAttribute('aria-label','この子を なおす');
-    var im=document.createElement('img');
-    im.alt=''; im.src=srcOf(it.sp)||'';
-    b.appendChild(im);
-    b.addEventListener('click',function(){
-      var arr = (it.from==='stage') ? creatures : sleeping;
-      var idx = arr.indexOf(it.sp);
+  var canAct=function(e){ return e.where===null || e.where===W().id; };
+  sortTiles(allCreatures(), canAct).forEach(function(entry){
+    var sp=entry.sp, active=canAct(entry);
+    g.appendChild(makeTile(entry, active, active?'✏️':null, function(){
+      var arr = entry.where ? slot(entry.where).live : sleeping;
+      var idx = arr.indexOf(sp);
       if(idx<0) return;
       ac();
-      var sp={ img:it.sp.img, src:it.sp.src, w:it.sp.w, h:it.sp.h, fav:it.sp.fav };
+      var cp=spriteOf(sp);
       arr.splice(idx,1);
       updateCount(); updateSleep(); save();
       closeEditBox();
       newDrawing(); show('draw');
       requestAnimationFrame(function(){
-        loadForEdit(sp);
+        loadForEdit(cp);
         toast('なおしたら「できた！」を おしてね');
       });
-    });
-    wrap.appendChild(b);
-    wrap.appendChild(starBtn(it.sp, renderEditBox));
-    g.appendChild(wrap);
+    }, renderEditBox));
   });
 }
 function openEditBox(){
@@ -1691,7 +1918,7 @@ function storageOK(){
 }
 function save(){
   try{
-    var pack=function(o){ var d=srcOf(o); return d?{d:d, w:Math.round(o.w), h:Math.round(o.h), f:o.fav?1:0}:null; };
+    var pack=function(o){ var d=srcOf(o); return d?{d:d, w:Math.round(o.w), h:Math.round(o.h), f:o.fav?1:0, n:o.name||null, b:o.born||0}:null; };
     var out={}, zzz=[], k, d, L, i, it;
     for(k in worldStore){
       d=worldStore[k]; L=[];
@@ -1746,7 +1973,8 @@ function load(cb){
   jobs.forEach(function(job){
     var im=new Image();
     im.onload=function(){
-      var sp={img:toCanvas(im), src:job.it.d, w:job.it.w, h:job.it.h, fav:!!job.it.f};
+      var sp={img:toCanvas(im), src:job.it.d, w:job.it.w, h:job.it.h,
+                fav:!!job.it.f, name:job.it.n||null, born:job.it.b||Date.now()};
       if(job.asleep) sleeping.push(sp);
       else slot(job.id).live.push(makeCreature(sp));
       fin();

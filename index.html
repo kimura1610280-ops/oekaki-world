@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>おえかきワールド</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="おえかきワールド">
+<meta name="theme-color" content="#7EC8F5">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<link rel="icon" href="data:image/png;base64,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">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+:root{
+  /* 光のテーマ */
+  --desk:#E9DFCB;
+  --desk-2:#DFD3BA;
+  --chrome:#FFFFFF;
+  --chrome-2:#F6EFE0;
+  --ink:#2A2A33;
+  --ink-2:#6F6A60;
+  --line:rgba(42,42,51,.16);
+  --accent:#FF6B3D;
+  --accent-2:#2E86D6;
+  --yellow:#FFC53D;
+  --danger:#D8503C;
+  --btn-drop:rgba(42,42,51,.22);
+  /* 紙の上はどちらのテーマでも紙の色（クレヨンが見えるため） */
+  --paper:#FFFDF6;
+  --on-paper:#2A2A33;
+  --on-paper-2:#A79E8B;
+  --radius:18px;
+  --tap:54px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --desk:#211F28;
+    --desk-2:#17161C;
+    --chrome:#312F3B;
+    --chrome-2:#3A3746;
+    --ink:#F3EFE5;
+    --ink-2:#A9A296;
+    --line:rgba(243,239,229,.2);
+    --btn-drop:rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --desk:#211F28;
+  --desk-2:#17161C;
+  --chrome:#312F3B;
+  --chrome-2:#3A3746;
+  --ink:#F3EFE5;
+  --ink-2:#A9A296;
+  --line:rgba(243,239,229,.2);
+  --btn-drop:rgba(0,0,0,.5);
+}
+
+html,body{height:100%;}
+body{
+  margin:0;
+  background:var(--desk);
+  color:var(--ink);
+  font-family:"Zen Kaku Gothic New","Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;
+  overscroll-behavior:none;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+  -webkit-tap-highlight-color:transparent;
+}
+#app{height:100%;position:relative;}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;}
+[hidden]{display:none !important;}
+
+/* ---------- 共通パーツ ---------- */
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;}
+button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
+.big{
+  font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
+  font-weight:800;font-size:clamp(17px,2.4vw,21px);
+  color:#fff;background:var(--accent);
+  padding:0 clamp(18px,3vw,30px);min-height:var(--tap);
+  border-radius:var(--radius);
+  box-shadow:0 5px 0 var(--btn-drop);
+  transition:transform .08s,box-shadow .08s;
+  display:inline-flex;align-items:center;gap:8px;white-space:nowrap;
+}
+.big:active{transform:translateY(4px);box-shadow:0 1px 0 var(--btn-drop);}
+.chip{
+  background:var(--chrome);border-radius:14px;min-height:44px;padding:0 14px;
+  font-weight:700;font-size:15px;color:var(--ink);
+  box-shadow:0 3px 0 var(--btn-drop);
+  display:inline-flex;align-items:center;gap:7px;white-space:nowrap;
+  transition:transform .08s,box-shadow .08s;
+}
+.chip:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-drop);}
+.chip.icon{padding:0;width:44px;justify-content:center;font-size:19px;}
+
+/* ---------- ステージ ---------- */
+#stageCv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;}
+.hud{position:absolute;left:0;right:0;z-index:5;display:flex;align-items:center;gap:10px;padding:12px 16px;pointer-events:none;flex-wrap:wrap;}
+.hud > *{pointer-events:auto;}
+.hud-top{top:0;padding-top:calc(12px + env(safe-area-inset-top,0px));}
+.hud-bottom{bottom:0;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));justify-content:center;}
+.brand{
+  font-family:"M PLUS Rounded 1c",sans-serif;font-weight:800;font-size:19px;
+  color:#fff;text-shadow:0 2px 6px rgba(20,30,50,.45);letter-spacing:.02em;
+  pointer-events:none;
+}
+.hud-top .spacer{flex:1;pointer-events:none;}
+.count{
+  font-weight:700;font-size:14px;color:#fff;background:rgba(20,28,45,.42);
+  padding:7px 12px;border-radius:12px;backdrop-filter:blur(3px);pointer-events:none;
+}
+.tip{
+  position:absolute;left:50%;transform:translateX(-50%);
+  top:calc(66px + env(safe-area-inset-top,0px));
+  max-width:min(600px,calc(100% - 32px));
+  background:var(--chrome);color:var(--ink);
+  border-radius:16px;padding:11px 18px;font-size:15px;font-weight:500;line-height:1.5;
+  box-shadow:0 6px 18px rgba(20,25,40,.25);text-align:center;
+  opacity:0;transition:opacity .35s,transform .35s;pointer-events:none;
+}
+.tip.on{opacity:1;transform:translateX(-50%) translateY(4px);}
+.tip b{color:var(--accent);}
+
+/* ---------- おえかき ---------- */
+.paperWrap{flex:1;min-height:0;position:relative;margin:12px 12px 0;}
+#drawCv{
+  position:absolute;inset:0;width:100%;height:100%;display:block;
+  background:var(--paper);border-radius:20px;touch-action:none;
+  box-shadow:0 4px 0 rgba(42,42,51,.14),0 14px 30px rgba(40,35,25,.16);
+}
+.hint{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:var(--on-paper-2);font-size:clamp(16px,2.6vw,22px);font-weight:700;
+  pointer-events:none;text-align:center;padding:0 24px;
+}
+.tools{
+  display:flex;flex-direction:column;gap:10px;
+  padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));
+}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.palette{justify-content:center;gap:9px;}
+.crayon{
+  width:46px;height:46px;border-radius:50%;
+  box-shadow:inset 0 -4px 0 rgba(0,0,0,.18),0 2px 0 var(--btn-drop);
+  transition:transform .1s;position:relative;
+}
+.crayon[aria-pressed="true"]{transform:translateY(-6px) scale(1.12);}
+.crayon[aria-pressed="true"]::after{
+  content:"";position:absolute;inset:-6px;border-radius:50%;
+  border:3px solid var(--ink);
+}
+.crayon.white{box-shadow:inset 0 -4px 0 rgba(0,0,0,.1),0 0 0 2px var(--line),0 2px 0 var(--btn-drop);}
+.brushBox{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-width:78px;height:var(--tap);background:var(--chrome);border-radius:14px;gap:2px;
+  box-shadow:0 3px 0 var(--btn-drop);
+}
+.brushDot{border-radius:50%;background:var(--ink);}
+.brushName{font-size:11px;font-weight:700;color:var(--ink-2);}
+.sizes{display:flex;gap:6px;}
+.sz{
+  width:46px;height:var(--tap);background:var(--chrome);border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 3px 0 var(--btn-drop);transition:transform .08s;
+}
+.sz[aria-pressed="true"]{background:var(--yellow);}
+.sz:active{transform:translateY(2px);}
+.sz i{display:block;border-radius:50%;background:var(--ink);}
+.tool{
+  min-height:var(--tap);padding:0 15px;background:var(--chrome);border-radius:14px;
+  font-weight:700;font-size:15px;box-shadow:0 3px 0 var(--btn-drop);
+  display:inline-flex;align-items:center;gap:6px;transition:transform .08s,box-shadow .08s;
+}
+.tool:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-drop);}
+.tool[aria-pressed="true"]{background:var(--yellow);}
+.tool.warn{color:var(--danger);}
+.spacer{flex:1;}
+.go{background:var(--accent);}
+
+/* ---------- おやすみボックス ---------- */
+.sheet{
+  position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;
+  background:rgba(18,24,38,.52);padding:16px;
+}
+.sheetCard{
+  background:var(--chrome);border-radius:26px;padding:18px;
+  width:min(560px,100%);max-height:100%;
+  display:flex;flex-direction:column;gap:12px;
+  box-shadow:0 18px 50px rgba(0,0,0,.38);
+}
+.sheetTitle{
+  font-family:"M PLUS Rounded 1c",sans-serif;font-weight:800;font-size:19px;
+  text-align:center;color:var(--ink);
+}
+.sheetSub{font-size:13px;color:var(--ink-2);text-align:center;margin-top:-8px;}
+.grid{
+  display:grid;grid-template-columns:repeat(auto-fill,104px);justify-content:center;
+  gap:10px;overflow-y:auto;padding:2px;-webkit-overflow-scrolling:touch;
+}
+.zzz{
+  position:relative;background:var(--chrome-2);border-radius:18px;aspect-ratio:1;
+  display:flex;align-items:center;justify-content:center;padding:10px;
+  box-shadow:0 3px 0 var(--btn-drop);transition:transform .08s,box-shadow .08s;
+}
+.zzz:active{transform:translateY(2px) scale(.97);box-shadow:0 1px 0 var(--btn-drop);}
+.zzz img{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none;}
+.zzz::after{content:"💤";position:absolute;top:5px;right:7px;font-size:14px;}
+.sheetBtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+
+/* ---------- トースト ---------- */
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(96px + env(safe-area-inset-bottom,0px));
+  background:var(--ink);color:var(--desk);
+  padding:12px 20px;border-radius:14px;font-weight:700;font-size:15px;
+  box-shadow:0 8px 24px rgba(0,0,0,.28);z-index:20;pointer-events:none;
+  opacity:0;transition:opacity .3s;max-width:calc(100% - 32px);text-align:center;
+}
+.toast.on{opacity:1;}
+
+@media (max-width:520px){
+  :root{--tap:50px;}
+  .crayon{width:42px;height:42px;}
+  .brushBox{min-width:66px;}
+  .tool{padding:0 12px;font-size:14px;}
+  .big{font-size:16px;padding:0 16px;}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.001ms !important;}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- ========= ステージ ========= -->
+  <section class="screen" id="stage">
+    <canvas id="stageCv"></canvas>
+    <div class="hud hud-top">
+      <div class="brand">おえかきワールド</div>
+      <div class="spacer"></div>
+      <button class="chip" id="worldBtn">🌈 そら</button>
+      <button class="chip icon" id="soundBtn" aria-label="おと">🔊</button>
+    </div>
+    <div class="tip" id="tip"></div>
+    <div class="sheet" id="sleepBox" hidden>
+      <div class="sheetCard">
+        <div class="sheetTitle">💤 おやすみ中の なかま</div>
+        <div class="sheetSub">おこしたい子を タップしてね</div>
+        <div class="grid" id="sleepGrid"></div>
+        <div class="sheetBtns">
+          <button class="chip" id="wakeAllBtn">☀️ ぜんぶ おこす</button>
+          <button class="chip" id="closeSleepBtn">とじる</button>
+        </div>
+      </div>
+    </div>
+    <div class="hud hud-bottom">
+      <button class="chip" id="wakeBtn" hidden>☀️ おこす</button>
+      <button class="chip" id="clearAllBtn">ぜんぶ おやすみ</button>
+      <button class="big" id="toDrawBtn">🖍️ おえかき する</button>
+      <div class="count" id="count">0 ひき</div>
+    </div>
+  </section>
+
+  <!-- ========= おえかき ========= -->
+  <section class="screen" id="draw" hidden>
+    <div class="paperWrap">
+      <canvas id="drawCv"></canvas>
+      <div class="hint" id="hint">すきな いきものを かいてね</div>
+    </div>
+    <div class="tools">
+      <div class="row palette" id="palette"></div>
+      <div class="row">
+        <div class="brushBox">
+          <span class="brushDot" id="brushDot"></span>
+          <span class="brushName" id="brushName">あか</span>
+        </div>
+        <div class="sizes" id="sizes"></div>
+        <button class="tool" id="eraserBtn" aria-pressed="false">けしゴム</button>
+        <button class="tool" id="undoBtn">↩︎ もどす</button>
+        <button class="tool warn" id="clearBtn">ぜんぶ けす</button>
+        <div class="spacer"></div>
+        <button class="big go" id="goBtn">できた！ うごかす ▶</button>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+'use strict';
+var $ = function(id){ return document.getElementById(id); };
+var clamp = function(v,a,b){ return v<a?a:(v>b?b:v); };
+
+/* ====================== おと ====================== */
+var AC=null, muted=false;
+function ac(){
+  if(!AC){ try{ AC = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ AC=null; } }
+  if(AC && AC.state==='suspended'){ AC.resume(); }
+  return AC;
+}
+function tone(f1,f2,dur,type,vol){
+  var c=ac(); if(!c||muted) return;
+  var o=c.createOscillator(), g=c.createGain(), t=c.currentTime;
+  o.type=type||'sine';
+  o.frequency.setValueAtTime(f1,t);
+  if(f2) o.frequency.exponentialRampToValueAtTime(Math.max(20,f2), t+dur);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.linearRampToValueAtTime(vol||0.16, t+0.014);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+  o.connect(g); g.connect(c.destination);
+  o.start(t); o.stop(t+dur+0.03);
+}
+var sfx={
+  jump:function(){ tone(430,880,0.17,'sine',0.15); },
+  grab:function(){ tone(720,520,0.09,'triangle',0.11); },
+  toss:function(){ tone(320,940,0.20,'triangle',0.13); },
+  land:function(v){ tone(180,90,0.12,'sine',clamp(v/9000,0.03,0.12)); },
+  tap:function(){ tone(900,1250,0.07,'sine',0.08); },
+  born:function(){ [523,659,784,1046].forEach(function(f,i){ setTimeout(function(){ tone(f,f*1.02,0.24,'sine',0.13); }, i*95); }); },
+  bye:function(){ tone(500,160,0.30,'sine',0.12); }
+};
+
+/* ====================== キャンバス ====================== */
+var stageScreen=$('stage'), drawScreen=$('draw');
+var scv=$('stageCv'), dcv=$('drawCv');
+var sctx=scv.getContext('2d');
+var dctx=dcv.getContext('2d',{willReadFrequently:true});
+var SW=0, SH=0, DW=0, DH=0, DPR=1;
+
+function fit(cv,ctx){
+  var r=cv.getBoundingClientRect();
+  var dpr=Math.min(window.devicePixelRatio||1, 2.5);
+  var w=Math.max(1,Math.round(r.width*dpr)), h=Math.max(1,Math.round(r.height*dpr));
+  if(cv.width!==w||cv.height!==h){ cv.width=w; cv.height=h; }
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {w:r.width, h:r.height, dpr:dpr};
+}
+function layout(){
+  if(!stageScreen.hidden){
+    var a=fit(scv,sctx); SW=a.w; SH=a.h;
+    for(var i=0;i<creatures.length;i++){
+      var c=creatures[i];
+      c.x=clamp(c.x, c.w/2, Math.max(c.w/2, SW-c.w/2));
+      c.y=clamp(c.y, c.h/2, Math.max(c.h/2, SH-c.h/2));
+    }
+  }
+  if(!drawScreen.hidden){
+    var b=fit(dcv,dctx); DW=b.w; DH=b.h; DPR=b.dpr;
+    redrawAll();
+  }
+}
+window.addEventListener('resize', layout);
+window.addEventListener('orientationchange', function(){ setTimeout(layout,250); });
+document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+document.addEventListener('dblclick', function(e){ e.preventDefault(); });
+
+function pos(cv,e){ var r=cv.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+
+/* ====================== おえかき ====================== */
+var COLORS=[
+  ['あか','#E8402A'],['オレンジ','#F58024'],['きいろ','#F5C518'],['きみどり','#8CC63E'],
+  ['みどり','#2FA84F'],['みずいろ','#48C0E8'],['あお','#2A6FD6'],['むらさき','#8B57C7'],
+  ['ピンク','#F07AB0'],['ちゃいろ','#8B5A2B'],['くろ','#2B2B33'],['しろ','#FFFFFF']
+];
+var SIZES=[['ほそい',7],['ふつう',16],['ふとい',32]];
+var color=COLORS[0][1], colorName=COLORS[0][0], size=SIZES[1][1], erasing=false;
+var strokes=[], cur=null, penSeen=false, activeId=null;
+
+var palette=$('palette');
+COLORS.forEach(function(c,i){
+  var b=document.createElement('button');
+  b.className='crayon'+(c[1]==='#FFFFFF'?' white':'');
+  b.style.background=c[1];
+  b.setAttribute('aria-label',c[0]);
+  b.setAttribute('aria-pressed', i===0?'true':'false');
+  b.addEventListener('click',function(){
+    color=c[1]; colorName=c[0]; erasing=false;
+    Array.prototype.forEach.call(palette.children,function(el){ el.setAttribute('aria-pressed','false'); });
+    b.setAttribute('aria-pressed','true');
+    $('eraserBtn').setAttribute('aria-pressed','false');
+    updateBrush(); sfx.tap();
+  });
+  palette.appendChild(b);
+});
+var sizesEl=$('sizes');
+SIZES.forEach(function(s,i){
+  var b=document.createElement('button');
+  b.className='sz'; b.setAttribute('aria-label',s[0]);
+  b.setAttribute('aria-pressed', i===1?'true':'false');
+  var d=Math.max(7,Math.min(26,s[1]));
+  b.innerHTML='<i style="width:'+d+'px;height:'+d+'px"></i>';
+  b.addEventListener('click',function(){
+    size=s[1];
+    Array.prototype.forEach.call(sizesEl.children,function(el){ el.setAttribute('aria-pressed','false'); });
+    b.setAttribute('aria-pressed','true');
+    updateBrush(); sfx.tap();
+  });
+  sizesEl.appendChild(b);
+});
+function updateBrush(){
+  var d=clamp(size,8,30);
+  var dot=$('brushDot');
+  dot.style.width=d+'px'; dot.style.height=d+'px';
+  dot.style.background= erasing ? 'var(--line)' : color;
+  dot.style.boxShadow = (color==='#FFFFFF'&&!erasing) ? '0 0 0 2px var(--line)' : 'none';
+  $('brushName').textContent = erasing ? 'けしゴム' : colorName;
+}
+updateBrush();
+
+function applyStyle(s){
+  dctx.lineCap='round'; dctx.lineJoin='round';
+  dctx.lineWidth=s.size;
+  dctx.strokeStyle=s.color; dctx.fillStyle=s.color;
+  dctx.globalCompositeOperation = s.erase ? 'destination-out' : 'source-over';
+}
+function dot(s,p){ applyStyle(s); dctx.beginPath(); dctx.arc(p.x,p.y,s.size/2,0,Math.PI*2); dctx.fill(); }
+function drawStroke(s){
+  var p=s.pts;
+  if(p.length===1){ dot(s,p[0]); return; }
+  applyStyle(s);
+  dctx.beginPath(); dctx.moveTo(p[0].x,p[0].y);
+  for(var i=1;i<p.length-1;i++){
+    var m={x:(p[i].x+p[i+1].x)/2, y:(p[i].y+p[i+1].y)/2};
+    dctx.quadraticCurveTo(p[i].x,p[i].y,m.x,m.y);
+  }
+  dctx.lineTo(p[p.length-1].x,p[p.length-1].y);
+  dctx.stroke();
+}
+function redrawAll(){
+  dctx.globalCompositeOperation='source-over';
+  dctx.clearRect(0,0,DW,DH);
+  for(var i=0;i<strokes.length;i++) drawStroke(strokes[i]);
+  dctx.globalCompositeOperation='source-over';
+  $('hint').style.display = strokes.length ? 'none' : 'flex';
+}
+function segment(s){
+  var p=s.pts, n=p.length;
+  if(n<2) return;
+  applyStyle(s);
+  dctx.beginPath();
+  if(n===2){ dctx.moveTo(p[0].x,p[0].y); dctx.lineTo(p[1].x,p[1].y); }
+  else{
+    var a=p[n-3], b=p[n-2], c=p[n-1];
+    dctx.moveTo((a.x+b.x)/2,(a.y+b.y)/2);
+    dctx.quadraticCurveTo(b.x,b.y,(b.x+c.x)/2,(b.y+c.y)/2);
+  }
+  dctx.stroke();
+  dctx.globalCompositeOperation='source-over';
+}
+dcv.addEventListener('pointerdown',function(e){
+  if(e.pointerType==='pen') penSeen=true;
+  if(penSeen && e.pointerType==='touch') return;
+  if(activeId!==null) return;
+  activeId=e.pointerId;
+  try{ dcv.setPointerCapture(e.pointerId); }catch(err){}
+  ac();
+  $('hint').style.display='none';
+  cur={color:color, size:size, erase:erasing, pts:[pos(dcv,e)]};
+  strokes.push(cur);
+  dot(cur,cur.pts[0]);
+  dctx.globalCompositeOperation='source-over';
+});
+dcv.addEventListener('pointermove',function(e){
+  if(e.pointerId!==activeId||!cur) return;
+  var evts = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+  for(var i=0;i<evts.length;i++){
+    var p=pos(dcv,evts[i]);
+    var last=cur.pts[cur.pts.length-1];
+    if(Math.abs(p.x-last.x)+Math.abs(p.y-last.y) < 1.2) continue;
+    cur.pts.push(p); segment(cur);
+  }
+});
+function endStroke(e){
+  if(e.pointerId!==activeId) return;
+  activeId=null; cur=null;
+}
+dcv.addEventListener('pointerup',endStroke);
+dcv.addEventListener('pointercancel',endStroke);
+window.addEventListener('pointerup',endStroke);
+
+$('eraserBtn').addEventListener('click',function(){
+  erasing=!erasing;
+  this.setAttribute('aria-pressed', erasing?'true':'false');
+  updateBrush(); sfx.tap();
+});
+$('undoBtn').addEventListener('click',function(){
+  if(!strokes.length) return;
+  strokes.pop(); redrawAll(); sfx.tap();
+});
+$('clearBtn').addEventListener('click',function(){
+  if(!strokes.length) return;
+  strokes=[]; redrawAll(); sfx.bye();
+});
+
+/* ====================== 絵 → いきもの ====================== */
+function extract(){
+  if(!DW||!DH) return null;
+  var W=dcv.width, H=dcv.height, data;
+  try{ data=dctx.getImageData(0,0,W,H).data; }catch(err){ return null; }
+  var minX=W, minY=H, maxX=-1, maxY=-1, x, y;
+  for(y=0;y<H;y++){
+    var row=y*W;
+    for(x=0;x<W;x++){
+      if(data[(row+x)*4+3]>20){
+        if(x<minX)minX=x; if(x>maxX)maxX=x;
+        if(y<minY)minY=y; if(y>maxY)maxY=y;
+      }
+    }
+  }
+  if(maxX<0) return null;
+  var pad=Math.round(5*DPR);
+  minX=Math.max(0,minX-pad); minY=Math.max(0,minY-pad);
+  maxX=Math.min(W-1,maxX+pad); maxY=Math.min(H-1,maxY+pad);
+  var cw=maxX-minX+1, ch=maxY-minY+1;
+  var k=Math.min(1, 560/Math.max(cw,ch));
+  var out=document.createElement('canvas');
+  out.width=Math.max(1,Math.round(cw*k)); out.height=Math.max(1,Math.round(ch*k));
+  var o=out.getContext('2d');
+  o.imageSmoothingEnabled=true; o.imageSmoothingQuality='high';
+  o.drawImage(dcv, minX,minY,cw,ch, 0,0,out.width,out.height);
+  var cssW=cw/DPR, cssH=ch/DPR, m=Math.max(cssW,cssH);
+  var target=clamp(m*0.55, 80, 190), s=target/m;
+  return {img:out, w:cssW*s, h:cssH*s};
+}
+
+/* ====================== せかい ====================== */
+var WORLDS=[
+  {id:'sora', label:'🌈 そら', gravity:1600, drag:0.999, wrap:false, hop:true, groundH:74,
+   tip:'そらの せかいは <b>じゅうりょく</b>。なにも しないと 下に おちるよ。'},
+  {id:'umi', label:'🌊 うみ', gravity:240, drag:0.90, wrap:false, hop:false, floaty:true, groundH:58,
+   tip:'水の中は ふわふわ。水が からだを おしあげる ちから＝<b>ふりょく</b>だよ。'},
+  {id:'uchu', label:'🚀 うちゅう', gravity:0, drag:1, wrap:true, spin:true, groundH:0,
+   tip:'うちゅうは じゅうりょくが ほとんど ない。なげたら <b>ずーっと まっすぐ</b> すすむよ。'}
+];
+var wi=0;
+function W(){ return WORLDS[wi]; }
+
+var stars=[];
+for(var i=0;i<130;i++) stars.push({x:Math.random(), y:Math.random(), r:Math.random()*1.5+0.5, t:Math.random()*6});
+var clouds=[{x:0.15,y:0.18,s:1},{x:0.55,y:0.1,s:0.7},{x:0.82,y:0.26,s:0.9}];
+var bubbles=[];
+for(var j=0;j<26;j++) bubbles.push({x:Math.random(), y:Math.random(), r:Math.random()*6+2, v:Math.random()*0.04+0.02});
+
+function paintWorld(t){
+  var w=W(), g;
+  if(w.id==='sora'){
+    g=sctx.createLinearGradient(0,0,0,SH);
+    g.addColorStop(0,'#7EC8F5'); g.addColorStop(0.62,'#C7E9FB'); g.addColorStop(1,'#EAF6E4');
+    sctx.fillStyle=g; sctx.fillRect(0,0,SW,SH);
+    sctx.fillStyle='rgba(255,226,120,.95)';
+    sctx.beginPath(); sctx.arc(SW-70,74,38,0,6.3); sctx.fill();
+    sctx.fillStyle='rgba(255,255,255,.88)';
+    for(var i=0;i<clouds.length;i++){
+      var c=clouds[i];
+      var cx=((c.x + t*0.006*c.s) % 1.25 - 0.125)*SW, cy=c.y*SH, s=c.s*(SW<520?0.7:1);
+      sctx.beginPath();
+      sctx.arc(cx,cy,26*s,0,6.3); sctx.arc(cx+30*s,cy+6*s,20*s,0,6.3); sctx.arc(cx-28*s,cy+8*s,17*s,0,6.3);
+      sctx.fill();
+    }
+    var gy=SH-w.groundH;
+    sctx.fillStyle='#8AD06A'; sctx.fillRect(0,gy,SW,w.groundH);
+    sctx.fillStyle='#6FBB52'; sctx.fillRect(0,gy,SW,9);
+  }else if(w.id==='umi'){
+    g=sctx.createLinearGradient(0,0,0,SH);
+    g.addColorStop(0,'#3FB5D6'); g.addColorStop(0.55,'#1E7FB5'); g.addColorStop(1,'#0E4F80');
+    sctx.fillStyle=g; sctx.fillRect(0,0,SW,SH);
+    sctx.save(); sctx.globalAlpha=0.12; sctx.fillStyle='#EAF9FF';
+    for(var k=0;k<4;k++){
+      var bx=(0.12+k*0.24)*SW + Math.sin(t*0.4+k)*18;
+      sctx.beginPath(); sctx.moveTo(bx,0); sctx.lineTo(bx+58,0); sctx.lineTo(bx+150,SH); sctx.lineTo(bx+20,SH);
+      sctx.closePath(); sctx.fill();
+    }
+    sctx.restore();
+    sctx.fillStyle='rgba(235,250,255,.45)';
+    for(var b=0;b<bubbles.length;b++){
+      var bb=bubbles[b];
+      bb.y-=bb.v*0.016; if(bb.y<-0.05){ bb.y=1.05; bb.x=Math.random(); }
+      sctx.beginPath(); sctx.arc(bb.x*SW + Math.sin(t+b)*6, bb.y*SH, bb.r,0,6.3); sctx.fill();
+    }
+    var gy2=SH-w.groundH;
+    sctx.fillStyle='#E8D9A8'; sctx.fillRect(0,gy2,SW,w.groundH);
+  }else{
+    g=sctx.createLinearGradient(0,0,0,SH);
+    g.addColorStop(0,'#14122B'); g.addColorStop(1,'#2A1B44');
+    sctx.fillStyle=g; sctx.fillRect(0,0,SW,SH);
+    for(var s2=0;s2<stars.length;s2++){
+      var st=stars[s2];
+      sctx.globalAlpha=0.35+0.65*Math.abs(Math.sin(t*1.1+st.t));
+      sctx.fillStyle='#FFF6D8';
+      sctx.beginPath(); sctx.arc(st.x*SW, st.y*SH, st.r,0,6.3); sctx.fill();
+    }
+    sctx.globalAlpha=1;
+    var px=SW*0.82, py=SH*0.2, pr=Math.min(46,SW*0.09);
+    sctx.fillStyle='#E0885C';
+    sctx.beginPath(); sctx.arc(px,py,pr,0,6.3); sctx.fill();
+    sctx.strokeStyle='rgba(255,220,180,.65)'; sctx.lineWidth=5;
+    sctx.save(); sctx.translate(px,py); sctx.rotate(-0.4); sctx.scale(1,0.32);
+    sctx.beginPath(); sctx.arc(0,0,pr*1.7,0,6.3); sctx.stroke(); sctx.restore();
+  }
+}
+
+/* ====================== いきもの ====================== */
+var creatures=[], parts=[], sleeping=[];
+function srcOf(o){
+  if(!o.src){ try{ o.src=o.img.toDataURL('image/png'); }catch(e){ o.src=null; } }
+  return o.src;
+}
+function toCanvas(im){
+  var c=document.createElement('canvas');
+  c.width=im.naturalWidth||im.width||1; c.height=im.naturalHeight||im.height||1;
+  c.getContext('2d').drawImage(im,0,0);
+  return c;
+}
+function addCreature(sp, opts){
+  opts=opts||{};
+  var c={
+    img:sp.img, src:sp.src||null, w:sp.w, h:sp.h,
+    x: opts.x!==undefined?opts.x: SW*(0.25+Math.random()*0.5),
+    y: opts.y!==undefined?opts.y: SH*0.28,
+    vx:(Math.random()*2-1)*180, vy:0,
+    rot:0, rotV:(Math.random()*2-1)*0.7, squash:0, wob:Math.random()*6,
+    hopT:0.5+Math.random()*1.6, held:false
+  };
+  creatures.push(c);
+  while(creatures.length>12){
+    var old=creatures.shift();
+    sleeping.push({img:old.img, src:old.src, w:old.w, h:old.h});
+  }
+  while(sleeping.length>16) sleeping.shift();
+  updateCount(); updateSleep();
+  return c;
+}
+function updateCount(){ $('count').textContent = creatures.length + ' ひき'; }
+
+function burst(x,y,col){
+  for(var i=0;i<16;i++){
+    var a=Math.random()*6.3, s=90+Math.random()*260;
+    parts.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-90,life:1,col:col||'#FFD75E',r:2+Math.random()*3});
+  }
+}
+
+function step(dt,t){
+  var w=W();
+  var groundY = w.wrap ? SH+400 : SH-w.groundH;
+  for(var i=0;i<creatures.length;i++){
+    var c=creatures[i];
+    c.squash *= Math.exp(-dt*7);
+    if(c.held){
+      if(w.spin) c.rot += c.rotV*dt*0.4;
+      else c.rot += (clamp(c.vx*0.0004,-0.4,0.4)-c.rot)*Math.min(1,dt*8);
+      continue;
+    }
+    c.wob += dt*2.1;
+    c.vy += w.gravity*dt;
+    if(w.floaty){
+      c.vy -= 200*dt;
+      c.vx += Math.sin(c.wob)*26*dt;
+      c.vy += Math.cos(c.wob*0.83)*22*dt;
+    }
+    var d=Math.pow(w.drag, dt*60);
+    c.vx*=d; c.vy*=d;
+    c.x += c.vx*dt; c.y += c.vy*dt;
+
+    var hw=c.w/2, hh=c.h/2;
+    if(w.wrap){
+      if(c.x < -hw) c.x = SW+hw; else if(c.x > SW+hw) c.x = -hw;
+      if(c.y < -hh) c.y = SH+hh; else if(c.y > SH+hh) c.y = -hh;
+      c.rot += c.rotV*dt;
+    }else{
+      if(c.x-hw<0){ c.x=hw; c.vx=Math.abs(c.vx)*0.78; }
+      if(c.x+hw>SW){ c.x=SW-hw; c.vx=-Math.abs(c.vx)*0.78; }
+      if(c.y-hh<0){ c.y=hh; c.vy=Math.abs(c.vy)*0.6; }
+      if(c.y+hh>groundY){
+        c.y=groundY-hh;
+        if(c.vy>240){ c.squash=clamp(c.vy/2600,0.08,0.42); sfx.land(c.vy); }
+        c.vy = -c.vy*(w.floaty?0.35:0.56);
+        if(Math.abs(c.vy)<90) c.vy=0;
+        c.vx *= 0.88;
+        if(w.hop){
+          c.hopT-=dt;
+          if(c.hopT<=0 && Math.abs(c.vy)<1){
+            c.vy = -(560+Math.random()*340);
+            c.vx += (Math.random()*2-1)*200;
+            c.squash=-0.2;
+            c.hopT=1.1+Math.random()*2.4;
+          }
+        }
+      }
+      if(w.floaty) c.rot = Math.sin(c.wob)*0.2;
+      else c.rot += (clamp(c.vx*0.0004,-0.4,0.4)-c.rot)*Math.min(1,dt*8);
+    }
+  }
+  for(var p=parts.length-1;p>=0;p--){
+    var q=parts[p];
+    q.vy += 900*dt; q.x+=q.vx*dt; q.y+=q.vy*dt; q.life-=dt*1.5;
+    if(q.life<=0) parts.splice(p,1);
+  }
+}
+
+function paintCreatures(){
+  var w=W();
+  var groundY = SH-w.groundH;
+  for(var i=0;i<creatures.length;i++){
+    var c=creatures[i];
+    if(!w.wrap){
+      var dist=clamp((groundY-(c.y+c.h/2))/260,0,1);
+      sctx.save();
+      sctx.globalAlpha=0.20*(1-dist);
+      sctx.fillStyle='#1E2A18';
+      sctx.beginPath();
+      sctx.ellipse(c.x, groundY-4, c.w*0.36*(1-dist*0.3), 7*(1-dist*0.4), 0,0,6.3);
+      sctx.fill(); sctx.restore();
+    }
+    var sq=c.squash;
+    var sx=1+sq*0.55, sy=1-sq*0.45;
+    sctx.save();
+    sctx.translate(c.x,c.y); sctx.rotate(c.rot); sctx.scale(sx,sy);
+    if(c.held){ sctx.shadowColor='rgba(0,0,0,.3)'; sctx.shadowBlur=18; sctx.shadowOffsetY=8; }
+    sctx.drawImage(c.img, -c.w/2, -c.h/2, c.w, c.h);
+    sctx.restore();
+  }
+  for(var p=0;p<parts.length;p++){
+    var q=parts[p];
+    sctx.globalAlpha=clamp(q.life,0,1);
+    sctx.fillStyle=q.col;
+    sctx.beginPath(); sctx.arc(q.x,q.y,q.r,0,6.3); sctx.fill();
+  }
+  sctx.globalAlpha=1;
+}
+
+var last=performance.now();
+function loop(now){
+  var dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(!stageScreen.hidden && SW>0){
+    var t=now/1000;
+    paintWorld(t);
+    step(dt,t);
+    paintCreatures();
+  }
+  requestAnimationFrame(loop);
+}
+document.addEventListener('visibilitychange',function(){ last=performance.now(); });
+
+/* ====================== つかむ・なげる ====================== */
+var grabs={};
+function pick(x,y){
+  for(var i=creatures.length-1;i>=0;i--){
+    var c=creatures[i], m=14;
+    if(x>c.x-c.w/2-m && x<c.x+c.w/2+m && y>c.y-c.h/2-m && y<c.y+c.h/2+m) return {c:c,i:i};
+  }
+  return null;
+}
+scv.addEventListener('pointerdown',function(e){
+  ac();
+  try{ scv.setPointerCapture(e.pointerId); }catch(err){}
+  var p=pos(scv,e), hit=pick(p.x,p.y);
+  if(hit){
+    var c=hit.c;
+    creatures.splice(hit.i,1); creatures.push(c);
+    c.held=true; c.gdx=c.x-p.x; c.gdy=c.y-p.y;
+    c.lx=p.x; c.ly=p.y; c.lt=performance.now();
+    c.moved=0; c.t0=c.lt; c.vx=0; c.vy=0; c.squash=0.24;
+    grabs[e.pointerId]=c;
+    sfx.grab();
+  }else{
+    burst(p.x,p.y,'#FFE9A8'); sfx.tap();
+  }
+});
+scv.addEventListener('pointermove',function(e){
+  var c=grabs[e.pointerId]; if(!c) return;
+  var p=pos(scv,e), now=performance.now();
+  var dt=Math.max(10, now-c.lt)/1000;
+  c.vx=clamp((p.x-c.lx)/dt,-2600,2600);
+  c.vy=clamp((p.y-c.ly)/dt,-2600,2600);
+  c.moved += Math.abs(p.x-c.lx)+Math.abs(p.y-c.ly);
+  c.x=p.x+c.gdx; c.y=p.y+c.gdy;
+  c.lx=p.x; c.ly=p.y; c.lt=now;
+});
+function release(e){
+  var c=grabs[e.pointerId]; if(!c) return;
+  delete grabs[e.pointerId];
+  c.held=false;
+  var quick = c.moved<14 && (performance.now()-c.t0)<420;
+  if(quick){
+    c.vx=(Math.random()*2-1)*160;
+    c.vy=-820; c.squash=-0.26;
+    burst(c.x, c.y+c.h/2, '#FFD75E');
+    sfx.jump();
+  }else{
+    sfx.toss();
+  }
+}
+scv.addEventListener('pointerup',release);
+scv.addEventListener('pointercancel',release);
+
+/* ====================== がめん きりかえ ====================== */
+function show(which){
+  stageScreen.hidden = which!=='stage';
+  drawScreen.hidden = which!=='draw';
+  requestAnimationFrame(function(){ layout(); last=performance.now(); });
+}
+$('toDrawBtn').addEventListener('click',function(){
+  ac(); closeSleepBox(); strokes=[]; show('draw');
+  requestAnimationFrame(function(){ redrawAll(); });
+});
+$('goBtn').addEventListener('click',function(){
+  var sp=extract();
+  if(!sp){ toast('まだ なにも かいてないよ！'); return; }
+  show('stage');
+  requestAnimationFrame(function(){
+    var c=addCreature(sp,{x:SW/2, y:SH*0.24});
+    c.vy=-120;
+    burst(c.x,c.y,'#FFD75E'); burst(c.x,c.y,'#FF8FB1');
+    sfx.born();
+    toast('うまれた！ さわって あそんでね');
+    save();
+  });
+  strokes=[];
+});
+function updateSleep(){
+  var b=$('wakeBtn');
+  if(sleeping.length){ b.hidden=false; b.textContent='☀️ おこす ('+sleeping.length+')'; }
+  else{ b.hidden=true; }
+}
+$('clearAllBtn').addEventListener('click',function(){
+  if(!creatures.length) return;
+  for(var i=0;i<creatures.length;i++){
+    var c=creatures[i];
+    burst(c.x,c.y,'#CFE3F5');
+    sleeping.push({img:c.img, src:c.src, w:c.w, h:c.h});
+  }
+  while(sleeping.length>12) sleeping.shift();
+  creatures=[]; updateCount(); updateSleep(); sfx.bye(); save();
+  toast('おやすみ。「☀️ おこす」で また あえるよ');
+});
+function wakeUp(sp, x){
+  var c=addCreature(sp,{ x:x!==undefined?x: SW*(0.22+Math.random()*0.56), y:SH*0.2 });
+  c.vy=-90; burst(c.x,c.y,'#FFE9A8'); sfx.jump();
+  return c;
+}
+function renderSleepBox(){
+  var g=$('sleepGrid');
+  g.innerHTML='';
+  sleeping.forEach(function(sp,i){
+    var b=document.createElement('button');
+    b.className='zzz';
+    b.setAttribute('aria-label','この子を おこす');
+    var im=document.createElement('img');
+    im.alt=''; im.src=srcOf(sp)||'';
+    b.appendChild(im);
+    b.addEventListener('click',function(){
+      var one=sleeping.splice(i,1)[0];
+      if(!one) return;
+      ac(); wakeUp(one); updateSleep(); save();
+      if(sleeping.length) renderSleepBox(); else closeSleepBox();
+    });
+    g.appendChild(b);
+  });
+}
+function openSleepBox(){
+  if(!sleeping.length) return;
+  ac(); renderSleepBox();
+  $('sleepBox').hidden=false;
+  sfx.tap();
+}
+function closeSleepBox(){ $('sleepBox').hidden=true; }
+$('wakeBtn').addEventListener('click',openSleepBox);
+$('closeSleepBtn').addEventListener('click',function(){ closeSleepBox(); sfx.tap(); });
+$('sleepBox').addEventListener('click',function(e){ if(e.target===this) closeSleepBox(); });
+$('wakeAllBtn').addEventListener('click',function(){
+  if(!sleeping.length) return;
+  ac(); closeSleepBox();
+  var box=sleeping.slice();
+  sleeping=[]; updateSleep();
+  box.forEach(function(sp,i){
+    setTimeout(function(){
+      wakeUp(sp, SW*(0.18+0.64*((i+0.5)/box.length)));
+      if(i===box.length-1) save();
+    }, i*150);
+  });
+  toast('おはよう！');
+});
+$('worldBtn').addEventListener('click',function(){
+  wi=(wi+1)%WORLDS.length;
+  this.textContent=W().label;
+  showTip(W().tip);
+  sfx.tap(); save();
+});
+$('soundBtn').addEventListener('click',function(){
+  muted=!muted;
+  this.textContent = muted ? '🔈' : '🔊';
+  this.setAttribute('aria-label', muted ? 'おとを だす' : 'おとを けす');
+  if(!muted) sfx.tap();
+});
+
+var toastT=null;
+function toast(msg){
+  var el=$('toast');
+  el.hidden=false; el.textContent=msg;
+  requestAnimationFrame(function(){ el.classList.add('on'); });
+  clearTimeout(toastT);
+  toastT=setTimeout(function(){
+    el.classList.remove('on');
+    setTimeout(function(){ el.hidden=true; },320);
+  },2600);
+}
+var tipT=null;
+function showTip(html){
+  var el=$('tip');
+  el.innerHTML=html; el.classList.add('on');
+  clearTimeout(tipT);
+  tipT=setTimeout(function(){ el.classList.remove('on'); },5200);
+}
+
+/* ====================== ほぞん ====================== */
+var KEY='oekaki-world-v1';
+function storageOK(){
+  try{ localStorage.setItem('__ok','1'); localStorage.removeItem('__ok'); return true; }
+  catch(e){ return false; }
+}
+function save(){
+  try{
+    var pack=function(o){ var d=srcOf(o); return d?{d:d, w:Math.round(o.w), h:Math.round(o.h)}:null; };
+    var list=[], zzz=[], i, it;
+    for(i=0;i<creatures.length;i++){ it=pack(creatures[i]); if(it) list.push(it); }
+    for(i=0;i<sleeping.length;i++){ it=pack(sleeping[i]); if(it) zzz.push(it); }
+    localStorage.setItem(KEY, JSON.stringify({seeded:true, world:wi, list:list, sleep:zzz}));
+  }catch(e){}
+}
+function load(cb){
+  var raw=null;
+  try{ raw=localStorage.getItem(KEY); }catch(e){}
+  if(!raw){ cb(false); return; }
+  var data=null;
+  try{ data=JSON.parse(raw); }catch(e){}
+  if(!data || !data.list){ cb(false); return; }
+  wi = (typeof data.world==='number' && WORLDS[data.world]) ? data.world : 0;
+  $('worldBtn').textContent=W().label;
+  var awake=data.list||[], zzz=data.sleep||[];
+  var n=awake.length+zzz.length, done=0;
+  function fin(){ if(++done===n){ updateSleep(); cb(true); } }
+  if(!n){ updateSleep(); cb(true); return; }
+  function restore(it, asleep){
+    var im=new Image();
+    im.onload=function(){
+      var sp={img:toCanvas(im), src:it.d, w:it.w, h:it.h};
+      if(asleep) sleeping.push(sp); else addCreature(sp);
+      fin();
+    };
+    im.onerror=fin;
+    im.src=it.d;
+  }
+  awake.forEach(function(it){ restore(it,false); });
+  zzz.forEach(function(it){ restore(it,true); });
+}
+
+/* ====================== みほんの いきもの ====================== */
+function doodle(col, kind){
+  var S=320, c=document.createElement('canvas');
+  c.width=S; c.height=S;
+  var g=c.getContext('2d');
+  g.lineCap='round'; g.lineJoin='round';
+  g.lineWidth=17; g.strokeStyle=col;
+  g.beginPath();
+  for(var i=0;i<=72;i++){
+    var a=i/72*Math.PI*2;
+    var r=(kind===0?96:84)+Math.sin(a*3+kind*2)*11+Math.cos(a*5+kind)*7;
+    var x=160+Math.cos(a)*r, y=150+Math.sin(a)*r*(kind===0?1:1.12);
+    if(i===0) g.moveTo(x,y); else g.lineTo(x,y);
+  }
+  g.closePath();
+  g.globalAlpha=0.28; g.fillStyle=col; g.fill(); g.globalAlpha=1;
+  g.stroke();
+  // あし
+  g.lineWidth=14;
+  g.beginPath(); g.moveTo(118,246); g.lineTo(104,286); g.moveTo(198,246); g.lineTo(212,286); g.stroke();
+  if(kind===1){ g.beginPath(); g.moveTo(130,64); g.lineTo(112,24); g.moveTo(190,64); g.lineTo(208,24); g.stroke(); }
+  // め
+  g.fillStyle='#2B2B33';
+  g.beginPath(); g.arc(128,136,15,0,6.3); g.arc(196,136,15,0,6.3); g.fill();
+  g.fillStyle='#fff';
+  g.beginPath(); g.arc(133,131,5,0,6.3); g.arc(201,131,5,0,6.3); g.fill();
+  // くち
+  g.strokeStyle='#2B2B33'; g.lineWidth=8;
+  g.beginPath(); g.arc(162,172,26,0.25,Math.PI-0.25); g.stroke();
+  return {img:c, w:kind===0?126:112, h:kind===0?126:120};
+}
+
+/* ====================== スタート ====================== */
+$('worldBtn').textContent=W().label;
+show('stage');
+requestAnimationFrame(function(){
+  layout();
+  if(!storageOK()) setTimeout(function(){ toast('このひらきかたでは えが ほぞんされません'); }, 3900);
+  load(function(had){
+    if(!had){
+      addCreature(doodle('#2E86D6',0), {x:SW*0.36, y:SH*0.35});
+      addCreature(doodle('#FF7A3D',1), {x:SW*0.64, y:SH*0.28});
+      setTimeout(function(){ toast('これは みほん。じぶんで かいてみよう！'); }, 700);
+    }
+    updateCount();
+  });
+  requestAnimationFrame(loop);
+});
+})();
+</script>
+
+</body>
+</html>

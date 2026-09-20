@@ -200,6 +200,16 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
   position:absolute;left:14px;top:50%;transform:translateY(-50%);
   display:flex;flex-direction:column;align-items:center;gap:8px;z-index:6;
 }
+.placeBar{
+  position:absolute;left:0;right:0;bottom:0;z-index:8;
+  display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+  padding:14px 16px calc(16px + env(safe-area-inset-bottom,0px));
+}
+.placeTxt{
+  font-size:14px;font-weight:700;color:#fff;
+  background:rgba(20,28,45,.55);padding:8px 13px;border-radius:12px;
+}
+#stage.placing .hud-bottom{display:none;}
 /* ぜんがめん：ワールドだけを残して、まわりの道具を消す */
 #stage.immersive .hud-bottom,
 #stage.immersive .brand,
@@ -414,8 +424,15 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
         </div>
       </div>
     </div>
+    <div class="placeBar" id="placeBar" hidden>
+      <span class="placeTxt">おおきさを きめてね</span>
+      <button class="zbtn" id="placeSmall" aria-label="ちいさく">－</button>
+      <button class="zbtn" id="placeBig" aria-label="おおきく">＋</button>
+      <button class="big" id="placeOk">これで いいよ！</button>
+    </div>
     <div class="hud hud-bottom">
       <button class="chip" id="editBtn" hidden>✏️ なおす</button>
+      <button class="chip" id="foodBtn" hidden>🍎 えさ</button>
       <button class="chip" id="wakeBtn" hidden>☀️ おこす</button>
       <button class="chip" id="clearAllBtn">ぜんぶ おやすみ</button>
       <button class="big" id="toDrawBtn">🖍️ おえかき する</button>
@@ -496,7 +513,14 @@ var sfx={
   tap:function(){ tone(900,1250,0.07,'sine',0.08); },
   born:function(){ [523,659,784,1046].forEach(function(f,i){ setTimeout(function(){ tone(f,f*1.02,0.24,'sine',0.13); }, i*95); }); },
   bye:function(){ tone(500,160,0.30,'sine',0.12); },
-  bump:function(){ tone(260,150,0.09,'sine',0.09); }
+  bump:function(){ tone(260,150,0.09,'sine',0.09); },
+  /* 大きい子ほど ひくい声。ものが大きいほど ひくい音が出るのと同じ */
+  voice:function(sz){
+    var m=clamp((sz-70)/130, 0, 1);
+    var f=980 - m*560;
+    tone(f*0.8, f*1.22, 0.17, 'sine', 0.15);
+  },
+  chomp:function(){ tone(420,180,0.12,'triangle',0.13); setTimeout(function(){ tone(300,140,0.1,'triangle',0.1); },90); }
 };
 
 /* ====================== キャンバス ====================== */
@@ -554,6 +578,7 @@ var art=null, actx=null, AW=0, AH=0, ADPR=1;
 var tmp=null, tctx=null, useTmp=false;
 var pendingFav=false;      // なおし中の子の おきにいり状態
 var pendingName=null, pendingBorn=0;
+var foodMode=false;
 var editingSp=null;        // なおし中の子そのもの（やめたら戻す）
 var baseLen=0;             // 読み込み直後の履歴の長さ（変更の有無を見る）
 var zoom=1, baseScale=1, panX=0, panY=0;
@@ -938,7 +963,7 @@ $('backBtn').addEventListener('click',function(){
   }
   clearTimeout(backArm); backArm=null;
   var back=editingSp;
-  newDrawing(); show('stage');
+  newDrawing(); setDrawMode(false); show('stage');
   if(back){
     requestAnimationFrame(function(){
       addCreature(back); save();
@@ -1211,7 +1236,7 @@ var sleeping=[];                                  // 共通のおやすみボッ
 var creatures=slot(WORLDS[0].id).live;
 function useWorld(){
   creatures=slot(W().id).live;
-  parts.length=0; grabs={};
+  parts.length=0; grabs={}; foods.length=0;
   updateCount(); updateSleep();
 }
 function srcOf(o){
@@ -1259,6 +1284,7 @@ function addCreature(sp, opts){
 function updateCount(){
   $('count').textContent = creatures.length + ' ひき';
   $('editBtn').hidden = allCreatures().length === 0;
+  $('foodBtn').hidden = creatures.length === 0;
 }
 
 function burst(x,y,col){
@@ -1271,6 +1297,7 @@ function burst(x,y,col){
 /* 着地したときの処理（地面も木の足場も同じ） */
 function landOn(c, topY, w, dt){
   c.y = topY - c.h/2;
+  c.onG = true;
   if(c.vy>240){ c.squash=clamp(c.vy/2600,0.08,0.42); sfx.land(c.vy); }
   c.vy = -c.vy*(w.floaty?0.35:0.56);
   if(Math.abs(c.vy)<90) c.vy=0;
@@ -1291,6 +1318,8 @@ function buoyOf(c, w){
   return Math.max(0, w.gravity + 1200*(0.35 - dens));
 }
 var bumpT=0;
+var foods=[];           // いま落ちている えさ
+var placing=null;       // 大きさを決めている最中の子
 function step(dt,t){
   var w=W();
   var groundY = w.wrap ? WH+400 : WH-GH();
@@ -1304,7 +1333,9 @@ function step(dt,t){
       else c.rot += (clamp(c.vx*0.0004,-0.4,0.4)-c.rot)*Math.min(1,dt*8);
       continue;
     }
+    c.onG = false;
     c.wob += dt*2.1;
+    if(c===placing){ c.rot*=0.9; continue; }
     c.vy += w.gravity*dt;
     if(w.floaty){
       c.vy -= buoyOf(c,w)*dt;
@@ -1338,6 +1369,66 @@ function step(dt,t){
       if(c.y+hh>groundY) landOn(c, groundY, w, dt);
       if(w.floaty) c.rot = Math.sin(c.wob)*0.2;
       else c.rot += (clamp(c.vx*0.0004,-0.4,0.4)-c.rot)*Math.min(1,dt*8);
+    }
+  }
+  /* えさ：落ちて、地面や足場にのる */
+  for(var fi=foods.length-1;fi>=0;fi--){
+    var f=foods[fi];
+    if(f.gone){ foods.splice(fi,1); continue; }
+    f.vy += (w.floaty ? w.gravity*0.25 : w.gravity)*dt;
+    var fd=Math.pow(w.drag, dt*60);
+    f.vx*=fd; f.vy*=fd;
+    var fPrev=f.y+f.h/2;
+    f.x+=f.vx*dt; f.y+=f.vy*dt;
+    var fhw=f.w/2, fhh=f.h/2;
+    if(f.x-fhw<0){ f.x=fhw; f.vx=Math.abs(f.vx)*0.6; }
+    if(f.x+fhw>WW){ f.x=WW-fhw; f.vx=-Math.abs(f.vx)*0.6; }
+    if(!w.wrap){
+      if(f.vy>0){
+        for(var fp=0;fp<plats.length;fp++){
+          var pq=plats[fp], pqx=pq.x*WW, pqw=pq.w*WW, pqy=pq.y*WH;
+          if(f.x>pqx && f.x<pqx+pqw && fPrev<=pqy+2 && f.y+fhh>=pqy){
+            f.y=pqy-fhh; f.vy=-f.vy*0.3; if(Math.abs(f.vy)<60) f.vy=0; f.vx*=0.8; break;
+          }
+        }
+      }
+      if(f.y+fhh>groundY){ f.y=groundY-fhh; f.vy=-f.vy*0.3; if(Math.abs(f.vy)<60) f.vy=0; f.vx*=0.8; }
+      if(f.y-fhh<0){ f.y=fhh; f.vy=Math.abs(f.vy)*0.4; }
+    }else{
+      if(f.x<-fhw) f.x=WW+fhw; else if(f.x>WW+fhw) f.x=-fhw;
+      if(f.y<-fhh) f.y=WH+fhh; else if(f.y>WH+fhh) f.y=-fhh;
+    }
+  }
+  /* えさを見つけたら 追いかけて 食べる */
+  if(foods.length){
+    for(var ci=0;ci<creatures.length;ci++){
+      var cc=creatures[ci];
+      if(cc.held || cc===placing) continue;
+      var best=null, bd=1e9;
+      for(var k2=0;k2<foods.length;k2++){
+        var ff=foods[k2];
+        if(ff.gone) continue;
+        var dd2=Math.hypot(ff.x-cc.x, ff.y-cc.y);
+        if(dd2<bd){ bd=dd2; best=ff; }
+      }
+      if(!best) continue;
+      var ddx=best.x-cc.x, ddy=best.y-cc.y, dn=Math.max(1,bd);
+      cc.vx += (ddx/dn)*1100*dt;
+      if(w.floaty || w.wrap){
+        cc.vy += (ddy/dn)*900*dt;
+      }else if(ddy < -30 && cc.onG){
+        cc.vy = -(520+Math.random()*220);
+        cc.onG=false;
+      }
+      if(bd < Math.min(cc.w,cc.h)*0.5 + Math.max(best.w,best.h)*0.45){
+        best.gone=true;
+        cc.squash=0.34;
+        burst(best.x,best.y,'#FFD16E'); burst(best.x,best.y,'#B6E36A');
+        var grow=Math.min(1.05, 330/Math.max(cc.w,cc.h));
+        cc.w*=grow; cc.h*=grow;
+        sfx.chomp();
+        setTimeout(function(){ save(); }, 60);
+      }
     }
   }
   /* いきものどうしが ぶつかる */
@@ -1392,6 +1483,13 @@ function paintCreatures(){
     sctx.translate(c.x,c.y); sctx.rotate(c.rot); sctx.scale(sx,sy);
     if(c.held){ sctx.shadowColor='rgba(0,0,0,.3)'; sctx.shadowBlur=18; sctx.shadowOffsetY=8; }
     sctx.drawImage(c.img, -c.w/2, -c.h/2, c.w, c.h);
+    sctx.restore();
+  }
+  for(var fj=0;fj<foods.length;fj++){
+    var fo=foods[fj];
+    sctx.save();
+    sctx.translate(fo.x,fo.y); sctx.rotate(fo.rot||0);
+    sctx.drawImage(fo.img, -fo.w/2, -fo.h/2, fo.w, fo.h);
     sctx.restore();
   }
   for(var p=0;p<parts.length;p++){
@@ -1503,6 +1601,17 @@ function camPtrList(){ var a=[]; for(var k in camPtrs) a.push(camPtrs[k]); retur
 scv.addEventListener('pointerdown',function(e){
   ac();
   try{ scv.setPointerCapture(e.pointerId); }catch(err){}
+  if(placing){
+    var pp=pos(scv,e);
+    camPtrs[e.pointerId]={ x:pp.x, y:pp.y, moved:0, t:performance.now() };
+    camN++;
+    if(camN===2){
+      var L0=camPtrList();
+      camGes={ mid:{x:(L0[0].x+L0[1].x)/2, y:(L0[0].y+L0[1].y)/2},
+               dist:Math.max(1, Math.hypot(L0[0].x-L0[1].x, L0[0].y-L0[1].y)) };
+    }
+    return;
+  }
   var p=pos(scv,e), wp=toWorld(p.x,p.y), hit=pick(wp.x,wp.y);
   if(hit){
     var c=hit.c;
@@ -1523,6 +1632,22 @@ scv.addEventListener('pointerdown',function(e){
   }
 });
 scv.addEventListener('pointermove',function(e){
+  if(placing){
+    var cp0=camPtrs[e.pointerId]; if(!cp0) return;
+    var q0=pos(scv,e);
+    var dx0=q0.x-cp0.x, dy0=q0.y-cp0.y;
+    cp0.x=q0.x; cp0.y=q0.y;
+    if(camN>=2 && camGes){
+      var L1=camPtrList();
+      if(L1.length<2) return;
+      var d1=Math.max(1, Math.hypot(L1[0].x-L1[1].x, L1[0].y-L1[1].y));
+      resizePlacing(d1/camGes.dist);
+      camGes.dist=d1;
+    }else{
+      placing.x += dx0/camS; placing.y += dy0/camS;
+    }
+    return;
+  }
   var c=grabs[e.pointerId];
   if(c){
     var q=pos(scv,e), wq=toWorld(q.x,q.y), now=performance.now();
@@ -1556,6 +1681,11 @@ scv.addEventListener('pointermove',function(e){
   }
 });
 function release(e){
+  if(placing){
+    if(camPtrs[e.pointerId]){ delete camPtrs[e.pointerId]; camN=Math.max(0,camN-1); }
+    if(camN<2) camGes=null;
+    return;
+  }
   var cp=camPtrs[e.pointerId];
   if(cp){
     delete camPtrs[e.pointerId];
@@ -1575,7 +1705,7 @@ function release(e){
     c.vx=(Math.random()*2-1)*160;
     c.vy=-820; c.squash=-0.26;
     burst(c.x, c.y+c.h/2, '#FFD75E');
-    sfx.jump();
+    sfx.voice(Math.max(c.w,c.h));
   }else{
     sfx.toss();
   }
@@ -1590,24 +1720,35 @@ function show(which){
   requestAnimationFrame(function(){ layout(); last=performance.now(); });
 }
 $('toDrawBtn').addEventListener('click',function(){
-  ac(); closeSleepBox(); closeEditBox(); newDrawing(); show('draw');
+  ac(); closeSleepBox(); closeEditBox(); newDrawing(); show('draw'); setDrawMode(false);
   requestAnimationFrame(function(){ redrawAll(); });
 });
 $('goBtn').addEventListener('click',function(){
   var sp=extract();
-  if(!sp){ toast('まだ なにも かいてないよ！'); return; }
+  if(!sp){ toast(foodMode ? 'たべものを かいてね！' : 'まだ なにも かいてないよ！'); return; }
+  if(foodMode){
+    show('stage');
+    requestAnimationFrame(function(){
+      var v=viewCenter();
+      var m=Math.max(sp.w,sp.h), k=clamp(95/m, 0.3, 1.3);
+      foods.push({ img:sp.img, w:sp.w*k, h:sp.h*k,
+                   x:v.x, y:v.y - SH*0.3/camS, vx:0, vy:0, rot:(Math.random()*2-1)*0.3 });
+      sfx.tap();
+      toast('えさを おとした！ みんな あつまるよ');
+    });
+    newDrawing(); setDrawMode(false);
+    return;
+  }
   sp.fav = pendingFav;
   sp.name = pendingName;
   sp.born = pendingBorn || Date.now();
   show('stage');
   requestAnimationFrame(function(){
     var v=viewCenter();
-    var c=addCreature(sp,{x:v.x, y:v.y - SH*0.24/camS});
-    c.vy=-120;
+    var c=addCreature(sp,{x:v.x, y:v.y - SH*0.12/camS});
     burst(c.x,c.y,'#FFD75E'); burst(c.x,c.y,'#FF8FB1');
     sfx.born();
-    toast('うまれた！ さわって あそんでね');
-    save();
+    startPlacing(c);
   });
   newDrawing();
 });
@@ -1704,6 +1845,47 @@ $('delModeBtn').addEventListener('click',function(){
   renderSleepBox(); sfx.tap();
 });
 $('wakeBtn').addEventListener('click',openSleepBox);
+
+/* ---------- ステージに出すとき 大きさを決める ---------- */
+function startPlacing(c){
+  placing=c;
+  c.vx=0; c.vy=0; c.rot=0;
+  stageScreen.classList.add('placing');
+  $('placeBar').hidden=false;
+  toast('ゆびで うごかす／2本ゆびで おおきさ');
+}
+function endPlacing(){
+  if(!placing) return;
+  var c=placing;
+  placing=null;
+  stageScreen.classList.remove('placing');
+  $('placeBar').hidden=true;
+  c.vy=-60;
+  sfx.voice(Math.max(c.w,c.h));
+  save();
+  toast('うまれた！ さわって あそんでね');
+}
+function resizePlacing(f){
+  if(!placing) return;
+  var m=Math.max(placing.w,placing.h);
+  var want=clamp(m*f, 50, 330), k=want/m;
+  placing.w*=k; placing.h*=k;
+}
+$('placeBig').addEventListener('click',function(){ resizePlacing(1.25); sfx.tap(); });
+$('placeSmall').addEventListener('click',function(){ resizePlacing(1/1.25); sfx.tap(); });
+$('placeOk').addEventListener('click',function(){ ac(); endPlacing(); });
+
+/* ---------- えさ ---------- */
+function setDrawMode(food){
+  foodMode=!!food;
+  $('goBtn').textContent = food ? 'できた！ あげる ▶' : 'できた！ うごかす ▶';
+  $('hint').textContent  = food ? 'たべものを かいてね' : 'すきな いきものを かいてね';
+}
+$('foodBtn').addEventListener('click',function(){
+  ac(); closeSleepBox(); closeEditBox();
+  newDrawing(); show('draw'); setDrawMode(true);
+  requestAnimationFrame(function(){ redrawAll(); });
+});
 
 /* ====================== なまえを てがきで ====================== */
 var padCv=$('namePadCv'), padCtx=null, padDPR=1;

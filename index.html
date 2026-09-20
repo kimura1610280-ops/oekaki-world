@@ -187,6 +187,14 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
 
 /* ---------- ズーム（キャンバスに重ねるので場所を取らない） ---------- */
 .zoomBar{position:absolute;right:10px;bottom:10px;display:flex;gap:6px;z-index:3;}
+.worldZoom{
+  position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:8px;z-index:6;
+}
+.zLabel{
+  font-size:11px;font-weight:700;color:#fff;background:rgba(20,28,45,.55);
+  padding:3px 7px;border-radius:8px;font-variant-numeric:tabular-nums;
+}
 .zbtn{
   width:42px;height:42px;border-radius:50%;
   background:rgba(255,255,255,.93);color:#2A2A33;
@@ -298,6 +306,12 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
       <button class="chip icon" id="soundBtn" aria-label="おと">🔊</button>
     </div>
     <div class="tip" id="tip"></div>
+    <div class="worldZoom">
+      <button class="zbtn" id="wZoomIn" aria-label="ちかづく">＋</button>
+      <button class="zbtn" id="wZoomOut" aria-label="とおざかる">－</button>
+      <button class="zbtn" id="wZoomFit" aria-label="ワールド ぜんたい">⤢</button>
+      <span class="zLabel" id="wZoomLabel" hidden>100%</span>
+    </div>
     <div class="sheet" id="sleepBox" hidden>
       <div class="sheetCard">
         <div class="sheetTitle">💤 おやすみ中の なかま</div>
@@ -361,6 +375,7 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
         <button class="tool" id="undoBtn">↩︎ もどす</button>
         <button class="tool warn" id="clearBtn">🗑 ぜんぶ</button>
         <div class="spacer"></div>
+        <button class="tool" id="backBtn">← やめる</button>
         <button class="big go" id="goBtn">できた！ うごかす ▶</button>
       </div>
     </div>
@@ -420,11 +435,12 @@ function fit(cv,ctx){
 }
 function layout(){
   if(!stageScreen.hidden){
-    var a=fit(scv,sctx); SW=a.w; SH=a.h;
+    var a=fit(scv,sctx); SW=a.w; SH=a.h; SDPR=a.dpr;
+    setWorld();
     for(var i=0;i<creatures.length;i++){
       var c=creatures[i];
-      c.x=clamp(c.x, c.w/2, Math.max(c.w/2, SW-c.w/2));
-      c.y=clamp(c.y, c.h/2, Math.max(c.h/2, SH-c.h/2));
+      c.x=clamp(c.x, c.w/2, Math.max(c.w/2, WW-c.w/2));
+      c.y=clamp(c.y, c.h/2, Math.max(c.h/2, WH-c.h/2));
     }
   }
   if(!drawScreen.hidden){
@@ -455,7 +471,9 @@ var strokes=[], cur=null, penSeen=false;
 
 var art=null, actx=null, AW=0, AH=0, ADPR=1;
 var tmp=null, tctx=null, useTmp=false;
-var pendingFav=false;  // なおし中の子の おきにいり状態
+var pendingFav=false;      // なおし中の子の おきにいり状態
+var editingSp=null;        // なおし中の子そのもの（やめたら戻す）
+var baseLen=0;             // 読み込み直後の履歴の長さ（変更の有無を見る）
 var zoom=1, baseScale=1, panX=0, panY=0;
 function SC(){ return baseScale*zoom; }
 
@@ -824,6 +842,26 @@ $('fillBtn').addEventListener('click',function(){
   if(filling) toast('ぬりたい ところを タップしてね');
 });
 $('tidyBtn').addEventListener('click',tidyLast);
+var backArm=null;
+$('backBtn').addEventListener('click',function(){
+  ac();
+  var dirty = strokes.length !== baseLen;
+  if(dirty && !backArm){
+    backArm=setTimeout(function(){ backArm=null; }, 3000);
+    toast('もういちど おすと やめます');
+    return;
+  }
+  clearTimeout(backArm); backArm=null;
+  var back=editingSp;
+  newDrawing(); show('stage');
+  if(back){
+    requestAnimationFrame(function(){
+      addCreature(back); save();
+      toast('もとに もどしたよ');
+    });
+  }
+  sfx.tap();
+});
 $('undoBtn').addEventListener('click',function(){
   if(!strokes.length) return;
   strokes.pop(); redrawAll(); sfx.tap();
@@ -866,17 +904,20 @@ function extract(){
 /* まっさらな紙にする */
 function newDrawing(){
   strokes=[]; cur=null; drawId=null; gesture=null; ptrs={}; ptrCount=0;
-  art=null; tmp=null; tctx=null; useTmp=false; zoom=1; pendingFav=false;
+  art=null; tmp=null; tctx=null; useTmp=false; zoom=1;
+  pendingFav=false; editingSp=null; baseLen=0;
 }
 /* すでにいる子を紙に読み込んで、なおせるようにする */
 function loadForEdit(sp){
   ensureArt();
   pendingFav = !!sp.fav;
+  editingSp = sp;
   var maxDim=Math.min(AW,AH)*0.62;
   var k=maxDim/Math.max(sp.w, sp.h);
   var dw=sp.w*k, dh=sp.h*k;
   actx.drawImage(sp.img, (AW-dw)/2, (AH-dh)/2, dw, dh);
   pushSnapshot();
+  baseLen = strokes.length;
   renderView();
   $('hint').style.display='none';
 }
@@ -902,30 +943,30 @@ for(var j=0;j<26;j++) bubbles.push({x:Math.random(), y:Math.random(), r:Math.ran
 function paintWorld(t){
   var w=W(), g;
   if(w.id==='sora'){
-    g=sctx.createLinearGradient(0,0,0,SH);
+    g=sctx.createLinearGradient(0,0,0,WH);
     g.addColorStop(0,'#7EC8F5'); g.addColorStop(0.62,'#C7E9FB'); g.addColorStop(1,'#EAF6E4');
-    sctx.fillStyle=g; sctx.fillRect(0,0,SW,SH);
+    sctx.fillStyle=g; sctx.fillRect(0,0,WW,WH);
     sctx.fillStyle='rgba(255,226,120,.95)';
-    sctx.beginPath(); sctx.arc(SW-70,74,38,0,6.3); sctx.fill();
+    sctx.beginPath(); sctx.arc(WW-70,74,38,0,6.3); sctx.fill();
     sctx.fillStyle='rgba(255,255,255,.88)';
     for(var i=0;i<clouds.length;i++){
       var c=clouds[i];
-      var cx=((c.x + t*0.006*c.s) % 1.25 - 0.125)*SW, cy=c.y*SH, s=c.s*(SW<520?0.7:1);
+      var cx=((c.x + t*0.006*c.s) % 1.25 - 0.125)*WW, cy=c.y*WH, s=c.s*(SW<520?0.7:1);
       sctx.beginPath();
       sctx.arc(cx,cy,26*s,0,6.3); sctx.arc(cx+30*s,cy+6*s,20*s,0,6.3); sctx.arc(cx-28*s,cy+8*s,17*s,0,6.3);
       sctx.fill();
     }
-    var gy=SH-w.groundH;
-    sctx.fillStyle='#8AD06A'; sctx.fillRect(0,gy,SW,w.groundH);
-    sctx.fillStyle='#6FBB52'; sctx.fillRect(0,gy,SW,9);
+    var gy=WH-GH();
+    sctx.fillStyle='#8AD06A'; sctx.fillRect(0,gy,WW,GH());
+    sctx.fillStyle='#6FBB52'; sctx.fillRect(0,gy,WW,9*WORLD_K);
   }else if(w.id==='umi'){
-    g=sctx.createLinearGradient(0,0,0,SH);
+    g=sctx.createLinearGradient(0,0,0,WH);
     g.addColorStop(0,'#3FB5D6'); g.addColorStop(0.55,'#1E7FB5'); g.addColorStop(1,'#0E4F80');
-    sctx.fillStyle=g; sctx.fillRect(0,0,SW,SH);
+    sctx.fillStyle=g; sctx.fillRect(0,0,WW,WH);
     sctx.save(); sctx.globalAlpha=0.12; sctx.fillStyle='#EAF9FF';
     for(var k=0;k<4;k++){
-      var bx=(0.12+k*0.24)*SW + Math.sin(t*0.4+k)*18;
-      sctx.beginPath(); sctx.moveTo(bx,0); sctx.lineTo(bx+58,0); sctx.lineTo(bx+150,SH); sctx.lineTo(bx+20,SH);
+      var bx=(0.12+k*0.24)*WW + Math.sin(t*0.4+k)*18;
+      sctx.beginPath(); sctx.moveTo(bx,0); sctx.lineTo(bx+58,0); sctx.lineTo(bx+150,WH); sctx.lineTo(bx+20,WH);
       sctx.closePath(); sctx.fill();
     }
     sctx.restore();
@@ -933,22 +974,22 @@ function paintWorld(t){
     for(var b=0;b<bubbles.length;b++){
       var bb=bubbles[b];
       bb.y-=bb.v*0.016; if(bb.y<-0.05){ bb.y=1.05; bb.x=Math.random(); }
-      sctx.beginPath(); sctx.arc(bb.x*SW + Math.sin(t+b)*6, bb.y*SH, bb.r,0,6.3); sctx.fill();
+      sctx.beginPath(); sctx.arc(bb.x*WW + Math.sin(t+b)*6, bb.y*WH, bb.r,0,6.3); sctx.fill();
     }
-    var gy2=SH-w.groundH;
-    sctx.fillStyle='#E8D9A8'; sctx.fillRect(0,gy2,SW,w.groundH);
+    var gy2=WH-GH();
+    sctx.fillStyle='#E8D9A8'; sctx.fillRect(0,gy2,WW,GH());
   }else{
-    g=sctx.createLinearGradient(0,0,0,SH);
+    g=sctx.createLinearGradient(0,0,0,WH);
     g.addColorStop(0,'#14122B'); g.addColorStop(1,'#2A1B44');
-    sctx.fillStyle=g; sctx.fillRect(0,0,SW,SH);
+    sctx.fillStyle=g; sctx.fillRect(0,0,WW,WH);
     for(var s2=0;s2<stars.length;s2++){
       var st=stars[s2];
       sctx.globalAlpha=0.35+0.65*Math.abs(Math.sin(t*1.1+st.t));
       sctx.fillStyle='#FFF6D8';
-      sctx.beginPath(); sctx.arc(st.x*SW, st.y*SH, st.r,0,6.3); sctx.fill();
+      sctx.beginPath(); sctx.arc(st.x*WW, st.y*WH, st.r,0,6.3); sctx.fill();
     }
     sctx.globalAlpha=1;
-    var px=SW*0.82, py=SH*0.2, pr=Math.min(46,SW*0.09);
+    var px=WW*0.82, py=WH*0.2, pr=Math.min(46,WW*0.09);
     sctx.fillStyle='#E0885C';
     sctx.beginPath(); sctx.arc(px,py,pr,0,6.3); sctx.fill();
     sctx.strokeStyle='rgba(255,220,180,.65)'; sctx.lineWidth=5;
@@ -973,8 +1014,8 @@ function addCreature(sp, opts){
   opts=opts||{};
   var c={
     img:sp.img, src:sp.src||null, w:sp.w, h:sp.h, fav:!!sp.fav,
-    x: opts.x!==undefined?opts.x: SW*(0.25+Math.random()*0.5),
-    y: opts.y!==undefined?opts.y: SH*0.28,
+    x: opts.x!==undefined?opts.x: spawnPos().x,
+    y: opts.y!==undefined?opts.y: spawnPos().y,
     vx:(Math.random()*2-1)*180, vy:0,
     rot:0, rotV:(Math.random()*2-1)*0.7, squash:0, wob:Math.random()*6,
     hopT:0.5+Math.random()*1.6, held:false
@@ -1002,7 +1043,7 @@ function burst(x,y,col){
 
 function step(dt,t){
   var w=W();
-  var groundY = w.wrap ? SH+400 : SH-w.groundH;
+  var groundY = w.wrap ? WH+400 : WH-GH();
   for(var i=0;i<creatures.length;i++){
     var c=creatures[i];
     c.squash *= Math.exp(-dt*7);
@@ -1024,12 +1065,12 @@ function step(dt,t){
 
     var hw=c.w/2, hh=c.h/2;
     if(w.wrap){
-      if(c.x < -hw) c.x = SW+hw; else if(c.x > SW+hw) c.x = -hw;
-      if(c.y < -hh) c.y = SH+hh; else if(c.y > SH+hh) c.y = -hh;
+      if(c.x < -hw) c.x = WW+hw; else if(c.x > WW+hw) c.x = -hw;
+      if(c.y < -hh) c.y = WH+hh; else if(c.y > WH+hh) c.y = -hh;
       c.rot += c.rotV*dt;
     }else{
       if(c.x-hw<0){ c.x=hw; c.vx=Math.abs(c.vx)*0.78; }
-      if(c.x+hw>SW){ c.x=SW-hw; c.vx=-Math.abs(c.vx)*0.78; }
+      if(c.x+hw>WW){ c.x=WW-hw; c.vx=-Math.abs(c.vx)*0.78; }
       if(c.y-hh<0){ c.y=hh; c.vy=Math.abs(c.vy)*0.6; }
       if(c.y+hh>groundY){
         c.y=groundY-hh;
@@ -1075,7 +1116,7 @@ function drawStar(g,cx,cy,r){
 }
 function paintCreatures(){
   var w=W();
-  var groundY = SH-w.groundH;
+  var groundY = WH-GH();
   for(var i=0;i<creatures.length;i++){
     var c=creatures[i];
     if(!w.wrap){
@@ -1105,55 +1146,145 @@ function paintCreatures(){
   sctx.globalAlpha=1;
 }
 
+/* ====================== カメラ（ひろいワールド） ======================
+   ワールドは画面の2倍の広さ。画面はそこを覗くカメラで、
+   画面座標 = ワールド座標 * camS + cam。 */
+var WORLD_K=2, WW=0, WH=0, SDPR=1;
+var camS=0, camX=0, camY=0;
+function GH(){ return W().groundH*WORLD_K; }
+function fitS(){ return WW ? Math.min(SW/WW, SH/WH) : 1; }
+function clampCam(){
+  var w=WW*camS, h=WH*camS;
+  camX = (w<=SW) ? (SW-w)/2 : clamp(camX, SW-w, 0);
+  camY = (h<=SH) ? (SH-h)/2 : clamp(camY, SH-h, 0);
+}
+function setWorld(){
+  WW=SW*WORLD_K; WH=SH*WORLD_K;
+  var f=fitS();
+  if(!camS){ camS=1; camX=(SW-WW)/2; camY=(SH-WH)/2; }
+  camS=clamp(camS, f, 1.8);
+  clampCam(); updateCamLabel();
+}
+function toWorld(sx,sy){ return { x:(sx-camX)/camS, y:(sy-camY)/camS }; }
+function viewCenter(){ return toWorld(SW/2, SH/2); }
+function camZoom(f, ax, ay){
+  var want=clamp(camS*f, fitS(), 1.8), k=want/camS;
+  if(ax===undefined){ ax=SW/2; ay=SH/2; }
+  camX = ax - (ax - camX)*k;
+  camY = ay - (ay - camY)*k;
+  camS = want; clampCam(); updateCamLabel();
+}
+function updateCamLabel(){
+  var el=$('wZoomLabel'); if(!el) return;
+  var pct=Math.round(camS*100);
+  el.hidden = (pct>=99 && pct<=101);
+  el.textContent = pct+'%';
+}
+function spawnPos(){
+  var v=viewCenter();
+  return { x: v.x + (Math.random()*2-1)*(SW*0.2/camS), y: v.y - (SH*0.22/camS) };
+}
+$('wZoomIn').addEventListener('click',function(){ camZoom(1.5); sfx.tap(); });
+$('wZoomOut').addEventListener('click',function(){ camZoom(1/1.5); sfx.tap(); });
+$('wZoomFit').addEventListener('click',function(){
+  camS=fitS(); clampCam(); updateCamLabel(); sfx.tap();
+  toast('ワールド ぜんたい');
+});
+
 var last=performance.now();
 function loop(now){
   var dt=Math.min(0.05,(now-last)/1000); last=now;
   if(!stageScreen.hidden && SW>0){
     var t=now/1000;
+    sctx.setTransform(SDPR*camS,0,0,SDPR*camS, SDPR*camX, SDPR*camY);
     paintWorld(t);
     step(dt,t);
     paintCreatures();
+    sctx.setTransform(SDPR,0,0,SDPR,0,0);
   }
   requestAnimationFrame(loop);
 }
 document.addEventListener('visibilitychange',function(){ last=performance.now(); });
 
 /* ====================== つかむ・なげる ====================== */
-var grabs={};
+/* いきものの上なら つかむ（2匹同時もOK）。
+   なにもない所なら 1本指でカメラを動かし、2本指でズームする。 */
+var grabs={}, camPtrs={}, camN=0, camGes=null;
 function pick(x,y){
   for(var i=creatures.length-1;i>=0;i--){
-    var c=creatures[i], m=14;
+    var c=creatures[i], m=14/camS;
     if(x>c.x-c.w/2-m && x<c.x+c.w/2+m && y>c.y-c.h/2-m && y<c.y+c.h/2+m) return {c:c,i:i};
   }
   return null;
 }
+function camPtrList(){ var a=[]; for(var k in camPtrs) a.push(camPtrs[k]); return a; }
 scv.addEventListener('pointerdown',function(e){
   ac();
   try{ scv.setPointerCapture(e.pointerId); }catch(err){}
-  var p=pos(scv,e), hit=pick(p.x,p.y);
+  var p=pos(scv,e), wp=toWorld(p.x,p.y), hit=pick(wp.x,wp.y);
   if(hit){
     var c=hit.c;
     creatures.splice(hit.i,1); creatures.push(c);
-    c.held=true; c.gdx=c.x-p.x; c.gdy=c.y-p.y;
-    c.lx=p.x; c.ly=p.y; c.lt=performance.now();
+    c.held=true; c.gdx=c.x-wp.x; c.gdy=c.y-wp.y;
+    c.lx=wp.x; c.ly=wp.y; c.lt=performance.now();
     c.moved=0; c.t0=c.lt; c.vx=0; c.vy=0; c.squash=0.24;
     grabs[e.pointerId]=c;
     sfx.grab();
-  }else{
-    burst(p.x,p.y,'#FFE9A8'); sfx.tap();
+    return;
+  }
+  camPtrs[e.pointerId]={ x:p.x, y:p.y, moved:0, t:performance.now() };
+  camN++;
+  if(camN===2){
+    var L=camPtrList();
+    camGes={ mid:{x:(L[0].x+L[1].x)/2, y:(L[0].y+L[1].y)/2},
+             dist:Math.max(1, Math.hypot(L[0].x-L[1].x, L[0].y-L[1].y)) };
   }
 });
 scv.addEventListener('pointermove',function(e){
-  var c=grabs[e.pointerId]; if(!c) return;
-  var p=pos(scv,e), now=performance.now();
-  var dt=Math.max(10, now-c.lt)/1000;
-  c.vx=clamp((p.x-c.lx)/dt,-2600,2600);
-  c.vy=clamp((p.y-c.ly)/dt,-2600,2600);
-  c.moved += Math.abs(p.x-c.lx)+Math.abs(p.y-c.ly);
-  c.x=p.x+c.gdx; c.y=p.y+c.gdy;
-  c.lx=p.x; c.ly=p.y; c.lt=now;
+  var c=grabs[e.pointerId];
+  if(c){
+    var q=pos(scv,e), wq=toWorld(q.x,q.y), now=performance.now();
+    var dt=Math.max(10, now-c.lt)/1000;
+    c.vx=clamp((wq.x-c.lx)/dt,-2600,2600);
+    c.vy=clamp((wq.y-c.ly)/dt,-2600,2600);
+    c.moved += (Math.abs(wq.x-c.lx)+Math.abs(wq.y-c.ly))*camS;
+    c.x=wq.x+c.gdx; c.y=wq.y+c.gdy;
+    c.lx=wq.x; c.ly=wq.y; c.lt=now;
+    return;
+  }
+  var cp=camPtrs[e.pointerId]; if(!cp) return;
+  var p=pos(scv,e);
+  var dx=p.x-cp.x, dy=p.y-cp.y;
+  cp.moved += Math.abs(dx)+Math.abs(dy);
+  cp.x=p.x; cp.y=p.y;
+  if(camN>=2 && camGes){
+    var L=camPtrList();
+    if(L.length<2) return;
+    var mid={x:(L[0].x+L[1].x)/2, y:(L[0].y+L[1].y)/2};
+    var dist=Math.max(1, Math.hypot(L[0].x-L[1].x, L[0].y-L[1].y));
+    var want=clamp(camS*(dist/camGes.dist), fitS(), 1.8);
+    var k=want/camS;
+    camX = mid.x - (camGes.mid.x - camX)*k;
+    camY = mid.y - (camGes.mid.y - camY)*k;
+    camS = want;
+    camGes.mid=mid; camGes.dist=dist;
+    clampCam(); updateCamLabel();
+  }else{
+    camX+=dx; camY+=dy; clampCam();
+  }
 });
 function release(e){
+  var cp=camPtrs[e.pointerId];
+  if(cp){
+    delete camPtrs[e.pointerId];
+    camN=Math.max(0,camN-1);
+    if(camN<2) camGes=null;
+    if(camN===0 && cp.moved<12 && (performance.now()-cp.t)<420){
+      var w=toWorld(cp.x,cp.y);
+      burst(w.x,w.y,'#FFE9A8'); sfx.tap();
+    }
+    return;
+  }
   var c=grabs[e.pointerId]; if(!c) return;
   delete grabs[e.pointerId];
   c.held=false;
@@ -1186,7 +1317,8 @@ $('goBtn').addEventListener('click',function(){
   sp.fav = pendingFav;
   show('stage');
   requestAnimationFrame(function(){
-    var c=addCreature(sp,{x:SW/2, y:SH*0.24});
+    var v=viewCenter();
+    var c=addCreature(sp,{x:v.x, y:v.y - SH*0.24/camS});
     c.vy=-120;
     burst(c.x,c.y,'#FFD75E'); burst(c.x,c.y,'#FF8FB1');
     sfx.born();
@@ -1212,7 +1344,8 @@ $('clearAllBtn').addEventListener('click',function(){
   toast('おやすみ。「☀️ おこす」で また あえるよ');
 });
 function wakeUp(sp, x){
-  var c=addCreature(sp,{ x:x!==undefined?x: SW*(0.22+Math.random()*0.56), y:SH*0.2 });
+  var v=viewCenter();
+  var c=addCreature(sp,{ x: x!==undefined?x : spawnPos().x, y: v.y - SH*0.22/camS });
   c.vy=-90; burst(c.x,c.y,'#FFE9A8'); sfx.jump();
   return c;
 }
@@ -1360,7 +1493,7 @@ $('wakeAllBtn').addEventListener('click',function(){
   sleeping=[]; updateSleep();
   box.forEach(function(sp,i){
     setTimeout(function(){
-      wakeUp(sp, SW*(0.18+0.64*((i+0.5)/box.length)));
+      wakeUp(sp, toWorld(SW*(0.18+0.64*((i+0.5)/box.length)), 0).x);
       if(i===box.length-1) save();
     }, i*150);
   });

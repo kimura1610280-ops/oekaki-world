@@ -190,6 +190,7 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
 }
 .tool:active{transform:translateY(2px);box-shadow:0 1px 0 var(--btn-drop);}
 .tool[aria-pressed="true"]{background:var(--yellow);}
+.tool.ico{width:var(--tap);padding:0;justify-content:center;font-size:20px;}
 .tool.warn{color:var(--danger);}
 .spacer{flex:1;}
 .go{background:var(--accent);}
@@ -469,7 +470,8 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
         <button class="tool" id="fillBtn" aria-pressed="false">🪣 ぬる</button>
         <button class="tool" id="eraserBtn" aria-pressed="false">けしゴム</button>
         <button class="tool" id="tidyBtn">✨ きれい</button>
-        <button class="tool" id="undoBtn">↩︎ もどす</button>
+        <button class="tool ico" id="undoBtn" aria-label="もどす">↩︎</button>
+        <button class="tool ico" id="redoBtn" aria-label="すすむ">↪︎</button>
         <button class="tool warn" id="clearBtn">🗑 ぜんぶ</button>
         <div class="spacer"></div>
         <button class="tool" id="backBtn">← やめる</button>
@@ -689,18 +691,40 @@ function dot(s,p,ctx,a){
   resetStyle(ctx);
 }
 /* 完成した線は1本のパスとして原画に描く（同じ線の重なりで濃くならない） */
+/* 描き直しは、描いていたときと まったく同じ順番・同じ区切りで積み重ねる。
+   1本の長いパスにまとめると、自分自身と交差する太い線の交差部分で
+   白い切れ込みが出る端末（iPadのSafariなど）があるため。 */
+function paintPieces(s, ctx, a){
+  var p=s.pts;
+  applyStyle(s, ctx, a);
+  ctx.beginPath(); ctx.arc(p[0].x, p[0].y, s.size/2, 0, Math.PI*2); ctx.fill();
+  for(var n=2; n<=p.length; n++){
+    ctx.beginPath();
+    if(n===2){
+      ctx.moveTo(p[0].x,p[0].y); ctx.lineTo(p[1].x,p[1].y);
+    }else{
+      var A=p[n-3], B=p[n-2], C=p[n-1];
+      ctx.moveTo((A.x+B.x)/2,(A.y+B.y)/2);
+      ctx.quadraticCurveTo(B.x,B.y,(B.x+C.x)/2,(B.y+C.y)/2);
+    }
+    ctx.stroke();
+  }
+  resetStyle(ctx);
+}
 function drawStroke(s){
   var a = s.erase ? 1 : (s.alpha===undefined?1:s.alpha);
-  var p=s.pts;
-  if(p.length===1){ dot(s,p[0],actx,a); return; }
-  applyStyle(s,actx,a);
-  actx.beginPath(); actx.moveTo(p[0].x,p[0].y);
-  for(var i=1;i<p.length-1;i++){
-    var m={x:(p[i].x+p[i+1].x)/2, y:(p[i].y+p[i+1].y)/2};
-    actx.quadraticCurveTo(p[i].x,p[i].y,m.x,m.y);
-  }
-  actx.lineTo(p[p.length-1].x,p[p.length-1].y);
-  actx.stroke(); resetStyle(actx);
+  if(s.pts.length===1){ dot(s,s.pts[0],actx,a); return; }
+  if(a>=1){ paintPieces(s, actx, 1); return; }
+  /* 半透明は、下書き板に不透明で積んでから 一度だけ薄く重ねる
+     （そのまま積むと 重なった所だけ濃くなってしまう） */
+  clearTmp();
+  paintPieces(s, tctx, 1);
+  actx.save(); actx.setTransform(1,0,0,1,0,0);
+  actx.globalAlpha=a; actx.globalCompositeOperation = s.erase ? 'destination-out' : 'source-over';
+  actx.drawImage(tmp,0,0);
+  actx.restore();
+  resetStyle(actx);
+  clearTmp();
 }
 /* 描いている途中は最後のひと区切りだけ足す。
    半透明のときは重ね書きで濃くなってしまうので、下書き用の板に不透明で描き、
@@ -723,6 +747,12 @@ function commitTmp(){
   if(!useTmp) return;
   if(cur) drawStroke(cur);
   clearTmp(); useTmp=false;
+}
+function finishStroke(){
+  if(!cur) return;
+  commitTmp();
+  renderView();
+  pushHist();
 }
 function redrawArt(){
   if(!art) return;
@@ -833,13 +863,14 @@ function tidyLast(){
     r/=n;
     var np=[];
     for(k=0;k<=72;k++){ var a=k/72*Math.PI*2; np.push({x:cx+Math.cos(a)*r, y:cy+Math.sin(a)*r}); }
-    s.pts=np;
+    strokes[strokes.length-1]={ color:s.color, size:s.size, erase:s.erase, alpha:s.alpha, pts:np };
     toast('まんまるに なった！');
   }else{
-    s.pts=[{x:p[0].x,y:p[0].y},{x:p[n-1].x,y:p[n-1].y}];
+    strokes[strokes.length-1]={ color:s.color, size:s.size, erase:s.erase, alpha:s.alpha,
+      pts:[{x:p[0].x,y:p[0].y},{x:p[n-1].x,y:p[n-1].y}] };
     toast('まっすぐに なった！');
   }
-  redrawAll(); sfx.tap();
+  redrawAll(); pushHist(); sfx.tap();
 }
 
 /* ---------- 指の操作（描く／2本指でズーム） ---------- */
@@ -875,7 +906,7 @@ dcv.addEventListener('pointerdown',function(e){
   if(filling){
     $('hint').style.display='none';
     var f=toArt(p.x,p.y);
-    if(floodFill(f.x,f.y,color,alpha)){ pushSnapshot(); renderView(); sfx.tap(); }
+    if(floodFill(f.x,f.y,color,alpha)){ pushSnapshot(); renderView(); pushHist(); sfx.tap(); }
     return;
   }
   $('hint').style.display='none';
@@ -919,7 +950,7 @@ dcv.addEventListener('pointermove',function(e){
 });
 function endPtr(e){
   if(ptrs[e.pointerId]){ delete ptrs[e.pointerId]; ptrCount=Math.max(0,ptrCount-1); }
-  if(e.pointerId===drawId){ commitTmp(); drawId=null; cur=null; renderView(); }
+  if(e.pointerId===drawId){ finishStroke(); drawId=null; cur=null; }
   if(ptrCount<2) gesture=null;
 }
 dcv.addEventListener('pointerup',endPtr);
@@ -972,13 +1003,41 @@ $('backBtn').addEventListener('click',function(){
   }
   sfx.tap();
 });
+/* もどす・すすむ の履歴。線の並びそのものを記録しておく */
+var hist=[[]], histIdx=0;
+function syncUndoUI(){
+  var u=$('undoBtn'), r=$('redoBtn');
+  var canU = histIdx>0, canR = histIdx < hist.length-1;
+  u.disabled=!canU; r.disabled=!canR;
+  u.style.opacity = canU ? 1 : .35;
+  r.style.opacity = canR ? 1 : .35;
+}
+function pushHist(){
+  hist.length = histIdx+1;
+  hist.push(strokes.slice());
+  while(hist.length>40) hist.shift();
+  histIdx = hist.length-1;
+  syncUndoUI();
+}
+function resetHist(){
+  hist=[strokes.slice()]; histIdx=0; syncUndoUI();
+}
+function gotoHist(i){
+  if(i<0 || i>=hist.length) return false;
+  histIdx=i;
+  strokes = hist[histIdx].slice();
+  redrawAll(); syncUndoUI();
+  return true;
+}
 $('undoBtn').addEventListener('click',function(){
-  if(!strokes.length) return;
-  strokes.pop(); redrawAll(); sfx.tap();
+  if(gotoHist(histIdx-1)) sfx.tap();
+});
+$('redoBtn').addEventListener('click',function(){
+  if(gotoHist(histIdx+1)) sfx.tap();
 });
 $('clearBtn').addEventListener('click',function(){
   if(!strokes.length) return;
-  strokes=[]; redrawAll(); sfx.bye();
+  strokes=[]; redrawAll(); pushHist(); sfx.bye();
 });
 
 /* ---------- 原画 → いきもの ---------- */
@@ -1018,6 +1077,7 @@ function extract(){
 function newDrawing(){
   strokes=[]; cur=null; drawId=null; gesture=null; ptrs={}; ptrCount=0;
   art=null; tmp=null; tctx=null; useTmp=false; zoom=1;
+  hist=[[]]; histIdx=0; syncUndoUI();
   pendingFav=false; pendingName=null; pendingBorn=0; editingSp=null; baseLen=0;
 }
 /* すでにいる子を紙に読み込んで、なおせるようにする */
@@ -1033,6 +1093,7 @@ function loadForEdit(sp){
   actx.drawImage(sp.img, (AW-dw)/2, (AH-dh)/2, dw, dh);
   pushSnapshot();
   baseLen = strokes.length;
+  resetHist();
   renderView();
   $('hint').style.display='none';
 }

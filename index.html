@@ -495,7 +495,8 @@ var sfx={
   land:function(v){ tone(180,90,0.12,'sine',clamp(v/9000,0.03,0.12)); },
   tap:function(){ tone(900,1250,0.07,'sine',0.08); },
   born:function(){ [523,659,784,1046].forEach(function(f,i){ setTimeout(function(){ tone(f,f*1.02,0.24,'sine',0.13); }, i*95); }); },
-  bye:function(){ tone(500,160,0.30,'sine',0.12); }
+  bye:function(){ tone(500,160,0.30,'sine',0.12); },
+  bump:function(){ tone(260,150,0.09,'sine',0.09); }
 };
 
 /* ====================== キャンバス ====================== */
@@ -843,6 +844,9 @@ dcv.addEventListener('pointerdown',function(e){
   }
   if(gesture) return;
 
+  /* 紙の用意ができていないときは何もしない（画面が出ていない間など） */
+  if(!art && DW && DH) ensureArt();
+  if(!actx) return;
   if(filling){
     $('hint').style.display='none';
     var f=toArt(p.x,p.y);
@@ -957,11 +961,12 @@ function extract(){
   if(!art) return null;
   var W=art.width, H=art.height, data;
   try{ data=actx.getImageData(0,0,W,H).data; }catch(err){ return null; }
-  var minX=W, minY=H, maxX=-1, maxY=-1, x, y;
+  var minX=W, minY=H, maxX=-1, maxY=-1, x, y, ink=0;
   for(y=0;y<H;y++){
     var row=y*W;
     for(x=0;x<W;x++){
       if(data[(row+x)*4+3]>20){
+        ink++;
         if(x<minX)minX=x; if(x>maxX)maxX=x;
         if(y<minY)minY=y; if(y>maxY)maxY=y;
       }
@@ -980,7 +985,9 @@ function extract(){
   o.drawImage(art, minX,minY,cw,ch, 0,0,out.width,out.height);
   var cssW=cw/ADPR, cssH=ch/ADPR, m=Math.max(cssW,cssH);
   var target=clamp(m*0.55, 80, 190), sc=target/m;
-  return {img:out, w:cssW*sc, h:cssH*sc};
+  /* かこみの中を ぬりつぶすほど 1 に近づく＝おもい */
+  var dens=clamp(ink/Math.max(1,cw*ch), 0.02, 0.95);
+  return {img:out, w:cssW*sc, h:cssH*sc, dens:dens};
 }
 /* まっさらな紙にする */
 function newDrawing(){
@@ -1011,10 +1018,15 @@ var WORLDS=[
    tip:'ひるの せかいは <b>じゅうりょく</b>。なにも しないと 下に おちるよ。'},
   {id:'yoru', label:'🌙 よる', gravity:1600, drag:0.999, wrap:false, hop:true, groundH:74,
    tip:'くらくても <b>じゅうりょくは おなじ</b>。おちかたは ひると かわらないよ。'},
-  {id:'jungle', label:'🌴 ジャングル', gravity:1500, drag:0.962, wrap:false, hop:true, groundH:86,
-   tip:'はっぱが びっしり。<b>くうきの ていこう</b>で ゆっくりしか すすめないよ。'},
+  {id:'jungle', label:'🌴 ジャングル', gravity:1600, drag:0.999, wrap:false, hop:true, groundH:86,
+   tip:'木の <b>あしば</b>に のれるよ。たかい ところから とびおりてみよう。',
+   plats:[
+     {x:0.05,y:0.70,w:0.22},{x:0.40,y:0.63,w:0.24},{x:0.74,y:0.72,w:0.21},
+     {x:0.20,y:0.47,w:0.21},{x:0.56,y:0.41,w:0.23},
+     {x:0.34,y:0.25,w:0.19},{x:0.70,y:0.20,w:0.18}
+   ]},
   {id:'umi', label:'🌊 うみ', gravity:240, drag:0.90, wrap:false, hop:false, floaty:true, groundH:58,
-   tip:'水の中は ふわふわ。水が からだを おしあげる ちから＝<b>ふりょく</b>だよ。'},
+   tip:'ぬりつぶした子は <b>おもくて しずむ</b>。線だけの子は かるくて <b>うかぶ</b>よ。'},
   {id:'uchu', label:'🚀 うちゅう', gravity:0, drag:1, wrap:true, spin:true, groundH:0,
    tip:'うちゅうは じゅうりょくが ほとんど ない。なげたら <b>ずーっと まっすぐ</b> すすむよ。'}
 ];
@@ -1126,6 +1138,23 @@ function paintWorld(t){
       sctx.beginPath(); sctx.ellipse(0,0,12,5.5,0,0,6.3); sctx.fill();
       sctx.restore();
     }
+    var pl=w.plats||[];
+    for(i=0;i<pl.length;i++){
+      var q=pl[i], qx=q.x*WW, qy=q.y*WH, qw=q.w*WW;
+      sctx.fillStyle='#5A3B22';
+      sctx.beginPath();
+      sctx.moveTo(qx,qy+7); sctx.lineTo(qx+qw,qy+7);
+      sctx.lineTo(qx+qw-6,qy+21); sctx.lineTo(qx+6,qy+21);
+      sctx.closePath(); sctx.fill();
+      sctx.fillStyle='#4E9A47';
+      for(var lx2=0; lx2<qw; lx2+=Math.max(26,qw/7)){
+        sctx.beginPath();
+        sctx.ellipse(qx+lx2+13, qy+4, 18, 9, Math.sin(lx2)*0.25, 0, 6.3);
+        sctx.fill();
+      }
+      sctx.fillStyle='#6FBF5C';
+      sctx.fillRect(qx+6, qy, qw-12, 5);
+    }
     paintGround('#6E9440','#557231');
   }else if(w.id==='umi'){
     g=sctx.createLinearGradient(0,0,0,WH);
@@ -1199,7 +1228,8 @@ function toCanvas(im){
 function spriteOf(o){
   return {
     img:o.img, src:o.src||null, w:o.w, h:o.h,
-    fav:!!o.fav, name:o.name||null, born:o.born||Date.now()
+    fav:!!o.fav, name:o.name||null, born:o.born||Date.now(),
+    dens:(o.dens===undefined?0.3:o.dens)
   };
 }
 function makeCreature(sp, opts){
@@ -1207,6 +1237,7 @@ function makeCreature(sp, opts){
   return {
     img:sp.img, src:sp.src||null, w:sp.w, h:sp.h,
     fav:!!sp.fav, name:sp.name||null, born:sp.born||Date.now(),
+    dens:(sp.dens===undefined?0.3:sp.dens),
     x: opts.x!==undefined?opts.x: spawnPos().x,
     y: opts.y!==undefined?opts.y: spawnPos().y,
     vx:(Math.random()*2-1)*180, vy:0,
@@ -1237,9 +1268,34 @@ function burst(x,y,col){
   }
 }
 
+/* 着地したときの処理（地面も木の足場も同じ） */
+function landOn(c, topY, w, dt){
+  c.y = topY - c.h/2;
+  if(c.vy>240){ c.squash=clamp(c.vy/2600,0.08,0.42); sfx.land(c.vy); }
+  c.vy = -c.vy*(w.floaty?0.35:0.56);
+  if(Math.abs(c.vy)<90) c.vy=0;
+  c.vx *= 0.88;
+  if(w.hop){
+    c.hopT-=dt;
+    if(c.hopT<=0 && Math.abs(c.vy)<1){
+      c.vy = -(560+Math.random()*340);
+      c.vx += (Math.random()*2-1)*200;
+      c.squash=-0.2;
+      c.hopT=1.1+Math.random()*2.4;
+    }
+  }
+}
+/* 水の中で うかぶ・しずむ。ぬりつぶすほど おもい（dens が大きい） */
+function buoyOf(c, w){
+  var dens = (c.dens===undefined) ? 0.3 : c.dens;
+  return Math.max(0, w.gravity + 1200*(0.35 - dens));
+}
+var bumpT=0;
 function step(dt,t){
   var w=W();
   var groundY = w.wrap ? WH+400 : WH-GH();
+  var plats = w.plats || [];
+  bumpT-=dt;
   for(var i=0;i<creatures.length;i++){
     var c=creatures[i];
     c.squash *= Math.exp(-dt*7);
@@ -1251,12 +1307,13 @@ function step(dt,t){
     c.wob += dt*2.1;
     c.vy += w.gravity*dt;
     if(w.floaty){
-      c.vy -= 200*dt;
+      c.vy -= buoyOf(c,w)*dt;
       c.vx += Math.sin(c.wob)*26*dt;
       c.vy += Math.cos(c.wob*0.83)*22*dt;
     }
     var d=Math.pow(w.drag, dt*60);
     c.vx*=d; c.vy*=d;
+    var prevBottom = c.y + c.h/2;
     c.x += c.vx*dt; c.y += c.vy*dt;
 
     var hw=c.w/2, hh=c.h/2;
@@ -1268,24 +1325,44 @@ function step(dt,t){
       if(c.x-hw<0){ c.x=hw; c.vx=Math.abs(c.vx)*0.78; }
       if(c.x+hw>WW){ c.x=WW-hw; c.vx=-Math.abs(c.vx)*0.78; }
       if(c.y-hh<0){ c.y=hh; c.vy=Math.abs(c.vy)*0.6; }
-      if(c.y+hh>groundY){
-        c.y=groundY-hh;
-        if(c.vy>240){ c.squash=clamp(c.vy/2600,0.08,0.42); sfx.land(c.vy); }
-        c.vy = -c.vy*(w.floaty?0.35:0.56);
-        if(Math.abs(c.vy)<90) c.vy=0;
-        c.vx *= 0.88;
-        if(w.hop){
-          c.hopT-=dt;
-          if(c.hopT<=0 && Math.abs(c.vy)<1){
-            c.vy = -(560+Math.random()*340);
-            c.vx += (Math.random()*2-1)*200;
-            c.squash=-0.2;
-            c.hopT=1.1+Math.random()*2.4;
+      /* 木の足場は上から降りてきたときだけ乗る（下からは通り抜ける） */
+      if(c.vy>0){
+        for(var pi=0;pi<plats.length;pi++){
+          var q=plats[pi], qx=q.x*WW, qw=q.w*WW, qy=q.y*WH;
+          if(c.x+hw*0.6 > qx && c.x-hw*0.6 < qx+qw && prevBottom <= qy+2 && c.y+hh >= qy){
+            landOn(c, qy, w, dt);
+            break;
           }
         }
       }
+      if(c.y+hh>groundY) landOn(c, groundY, w, dt);
       if(w.floaty) c.rot = Math.sin(c.wob)*0.2;
       else c.rot += (clamp(c.vx*0.0004,-0.4,0.4)-c.rot)*Math.min(1,dt*8);
+    }
+  }
+  /* いきものどうしが ぶつかる */
+  for(var a=0;a<creatures.length;a++){
+    var A=creatures[a], ra=Math.min(A.w,A.h)*0.42;
+    for(var b=a+1;b<creatures.length;b++){
+      var B=creatures[b], rb=Math.min(B.w,B.h)*0.42;
+      var dx=B.x-A.x, dy=B.y-A.y;
+      var dd=Math.hypot(dx,dy), min=ra+rb;
+      if(dd>=min || dd<0.001) continue;
+      var nx=dx/dd, ny=dy/dd, push=(min-dd);
+      var aFix = A.held?0:(B.held?1:0.5), bFix = B.held?0:(A.held?1:0.5);
+      A.x-=nx*push*aFix; A.y-=ny*push*aFix;
+      B.x+=nx*push*bFix; B.y+=ny*push*bFix;
+      var rel=(B.vx-A.vx)*nx + (B.vy-A.vy)*ny;
+      if(rel<0){
+        var imp=-rel*0.6;
+        if(!A.held){ A.vx-=nx*imp; A.vy-=ny*imp; }
+        if(!B.held){ B.vx+=nx*imp; B.vy+=ny*imp; }
+        if(-rel>380 && bumpT<=0){
+          bumpT=0.13;
+          A.squash=Math.max(A.squash,0.16); B.squash=Math.max(B.squash,0.16);
+          sfx.bump();
+        }
+      }
     }
   }
   for(var p=parts.length-1;p>=0;p--){
@@ -1916,9 +1993,11 @@ function storageOK(){
   try{ localStorage.setItem('__ok','1'); localStorage.removeItem('__ok'); return true; }
   catch(e){ return false; }
 }
+var bootDone=false;
 function save(){
+  if(!bootDone) return;
   try{
-    var pack=function(o){ var d=srcOf(o); return d?{d:d, w:Math.round(o.w), h:Math.round(o.h), f:o.fav?1:0, n:o.name||null, b:o.born||0}:null; };
+    var pack=function(o){ var d=srcOf(o); return d?{d:d, w:Math.round(o.w), h:Math.round(o.h), f:o.fav?1:0, n:o.name||null, b:o.born||0, s:Math.round((o.dens===undefined?0.3:o.dens)*100)}:null; };
     var out={}, zzz=[], k, d, L, i, it;
     for(k in worldStore){
       d=worldStore[k]; L=[];
@@ -1974,7 +2053,8 @@ function load(cb){
     var im=new Image();
     im.onload=function(){
       var sp={img:toCanvas(im), src:job.it.d, w:job.it.w, h:job.it.h,
-                fav:!!job.it.f, name:job.it.n||null, born:job.it.b||Date.now()};
+                fav:!!job.it.f, name:job.it.n||null, born:job.it.b||Date.now(),
+                dens:(job.it.s===undefined?30:job.it.s)/100};
       if(job.asleep) sleeping.push(sp);
       else slot(job.id).live.push(makeCreature(sp));
       fin();
@@ -2027,6 +2107,7 @@ requestAnimationFrame(function(){
   layout();
   if(!storageOK()) setTimeout(function(){ toast('このひらきかたでは えが ほぞんされません'); }, 3900);
   load(function(had){
+    bootDone=true;
     if(!had){
       addCreature(doodle('#2E86D6',0), {x:SW*0.36, y:SH*0.35});
       addCreature(doodle('#FF7A3D',1), {x:SW*0.64, y:SH*0.28});

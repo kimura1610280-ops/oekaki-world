@@ -643,7 +643,7 @@ function redrawArt(){
       drawStroke(s);
     }
   }
-  resetStyle();
+  resetStyle(actx);
 }
 function redrawAll(){
   redrawArt(); renderView();
@@ -1292,10 +1292,13 @@ function setImmersive(on){
   b.textContent = on ? '✕' : '⛶';
   b.setAttribute('aria-label', on ? 'もとに もどす' : 'ぜんがめん');
   /* 対応しているブラウザではブラウザ自体も全画面にする（iPhoneのSafariは非対応） */
+  /* 全画面が許可されない環境（iPhoneのSafari、埋め込み表示など）では
+     Promise が拒否されるので、握りつぶしてUIだけ隠す */
   try{
-    var el=document.documentElement;
-    if(on && el.requestFullscreen && !document.fullscreenElement) el.requestFullscreen();
-    else if(!on && document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+    var el=document.documentElement, pr=null;
+    if(on && el.requestFullscreen && !document.fullscreenElement) pr=el.requestFullscreen();
+    else if(!on && document.fullscreenElement && document.exitFullscreen) pr=document.exitFullscreen();
+    if(pr && pr.catch) pr.catch(function(){});
   }catch(e){}
   requestAnimationFrame(layout);
 }

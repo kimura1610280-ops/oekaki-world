@@ -105,12 +105,13 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
 #stageCv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;}
 .hud{position:absolute;left:0;right:0;z-index:5;display:flex;align-items:center;gap:10px;padding:12px 16px;pointer-events:none;flex-wrap:wrap;}
 .hud > *{pointer-events:auto;}
-.hud-top{top:0;padding-top:calc(12px + env(safe-area-inset-top,0px));}
+.hud-top{top:0;padding-top:calc(12px + env(safe-area-inset-top,0px));flex-wrap:nowrap;}
 .hud-bottom{bottom:0;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));justify-content:center;}
 .brand{
   font-family:"M PLUS Rounded 1c",sans-serif;font-weight:800;font-size:19px;
   color:#fff;text-shadow:0 2px 6px rgba(20,30,50,.45);letter-spacing:.02em;
   pointer-events:none;
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .hud-top .spacer{flex:1;pointer-events:none;}
 .count{
@@ -191,6 +192,14 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
   position:absolute;left:14px;top:50%;transform:translateY(-50%);
   display:flex;flex-direction:column;align-items:center;gap:8px;z-index:6;
 }
+/* ぜんがめん：ワールドだけを残して、まわりの道具を消す */
+#stage.immersive .hud-bottom,
+#stage.immersive .brand,
+#stage.immersive #worldBtn,
+#stage.immersive #soundBtn,
+#stage.immersive .worldZoom{display:none;}
+#stage.immersive #fullBtn{opacity:.5;}
+#stage.immersive #fullBtn:active{opacity:1;}
 .zLabel{
   font-size:11px;font-weight:700;color:#fff;background:rgba(20,28,45,.55);
   padding:3px 7px;border-radius:8px;font-variant-numeric:tabular-nums;
@@ -277,6 +286,7 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
 
 @media (max-width:520px){
   :root{--tap:44px;}
+  .brand{display:none;}
   .crayon{width:36px;height:36px;}
   .palette{gap:7px;}
   .row{gap:7px;}
@@ -302,8 +312,9 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
     <div class="hud hud-top">
       <div class="brand">おえかきワールド</div>
       <div class="spacer"></div>
-      <button class="chip" id="worldBtn">🌈 そら</button>
+      <button class="chip" id="worldBtn">☀️ ひる</button>
       <button class="chip icon" id="soundBtn" aria-label="おと">🔊</button>
+      <button class="chip icon" id="fullBtn" aria-label="ぜんがめん">⛶</button>
     </div>
     <div class="tip" id="tip"></div>
     <div class="worldZoom">
@@ -924,8 +935,12 @@ function loadForEdit(sp){
 
 /* ====================== せかい ====================== */
 var WORLDS=[
-  {id:'sora', label:'🌈 そら', gravity:1600, drag:0.999, wrap:false, hop:true, groundH:74,
-   tip:'そらの せかいは <b>じゅうりょく</b>。なにも しないと 下に おちるよ。'},
+  {id:'hiru', label:'☀️ ひる', gravity:1600, drag:0.999, wrap:false, hop:true, groundH:74,
+   tip:'ひるの せかいは <b>じゅうりょく</b>。なにも しないと 下に おちるよ。'},
+  {id:'yoru', label:'🌙 よる', gravity:1600, drag:0.999, wrap:false, hop:true, groundH:74,
+   tip:'くらくても <b>じゅうりょくは おなじ</b>。おちかたは ひると かわらないよ。'},
+  {id:'jungle', label:'🌴 ジャングル', gravity:1500, drag:0.962, wrap:false, hop:true, groundH:86,
+   tip:'はっぱが びっしり。<b>くうきの ていこう</b>で ゆっくりしか すすめないよ。'},
   {id:'umi', label:'🌊 うみ', gravity:240, drag:0.90, wrap:false, hop:false, floaty:true, groundH:58,
    tip:'水の中は ふわふわ。水が からだを おしあげる ちから＝<b>ふりょく</b>だよ。'},
   {id:'uchu', label:'🚀 うちゅう', gravity:0, drag:1, wrap:true, spin:true, groundH:0,
@@ -934,39 +949,120 @@ var WORLDS=[
 var wi=0;
 function W(){ return WORLDS[wi]; }
 
-var stars=[];
-for(var i=0;i<130;i++) stars.push({x:Math.random(), y:Math.random(), r:Math.random()*1.5+0.5, t:Math.random()*6});
-var clouds=[{x:0.15,y:0.18,s:1},{x:0.55,y:0.1,s:0.7},{x:0.82,y:0.26,s:0.9}];
-var bubbles=[];
-for(var j=0;j<26;j++) bubbles.push({x:Math.random(), y:Math.random(), r:Math.random()*6+2, v:Math.random()*0.04+0.02});
+var stars=[], clouds=[], bubbles=[], fireflies=[], leaves=[], vines=[];
+(function(){
+  var i;
+  for(i=0;i<170;i++) stars.push({x:Math.random(), y:Math.random()*0.7, r:Math.random()*1.6+0.6, t:Math.random()*6});
+  for(i=0;i<8;i++)   clouds.push({x:Math.random(), y:0.04+Math.random()*0.30, s:0.6+Math.random()*0.6});
+  for(i=0;i<34;i++)  bubbles.push({x:Math.random(), y:Math.random(), r:Math.random()*6+2, v:Math.random()*0.04+0.02});
+  for(i=0;i<22;i++)  fireflies.push({x:Math.random(), y:0.35+Math.random()*0.5, s:0.4+Math.random()*0.6, p:Math.random()*6.3});
+  for(i=0;i<20;i++)  leaves.push({x:Math.random(), y:Math.random(), v:0.5+Math.random()*0.9, p:Math.random()*6.3});
+  for(i=0;i<9;i++)   vines.push({x:0.05+Math.random()*0.9, l:0.12+Math.random()*0.3, p:Math.random()*6.3});
+})();
+
+function paintClouds(t,col){
+  sctx.fillStyle=col;
+  for(var i=0;i<clouds.length;i++){
+    var c=clouds[i];
+    var cx=((c.x + t*0.004*c.s) % 1.2 - 0.1)*WW, cy=c.y*WH, s=c.s*(SW<520?0.75:1.1);
+    sctx.beginPath();
+    sctx.arc(cx,cy,26*s,0,6.3); sctx.arc(cx+30*s,cy+6*s,20*s,0,6.3); sctx.arc(cx-28*s,cy+8*s,17*s,0,6.3);
+    sctx.fill();
+  }
+}
+function paintGround(top,edge){
+  var gy=WH-GH();
+  sctx.fillStyle=top; sctx.fillRect(0,gy,WW,GH());
+  sctx.fillStyle=edge; sctx.fillRect(0,gy,WW,9*WORLD_K);
+}
 
 function paintWorld(t){
-  var w=W(), g;
-  if(w.id==='sora'){
+  var w=W(), g, i;
+  if(w.id==='hiru'){
     g=sctx.createLinearGradient(0,0,0,WH);
     g.addColorStop(0,'#7EC8F5'); g.addColorStop(0.62,'#C7E9FB'); g.addColorStop(1,'#EAF6E4');
     sctx.fillStyle=g; sctx.fillRect(0,0,WW,WH);
     sctx.fillStyle='rgba(255,226,120,.95)';
-    sctx.beginPath(); sctx.arc(WW-70,74,38,0,6.3); sctx.fill();
-    sctx.fillStyle='rgba(255,255,255,.88)';
-    for(var i=0;i<clouds.length;i++){
-      var c=clouds[i];
-      var cx=((c.x + t*0.006*c.s) % 1.25 - 0.125)*WW, cy=c.y*WH, s=c.s*(SW<520?0.7:1);
-      sctx.beginPath();
-      sctx.arc(cx,cy,26*s,0,6.3); sctx.arc(cx+30*s,cy+6*s,20*s,0,6.3); sctx.arc(cx-28*s,cy+8*s,17*s,0,6.3);
-      sctx.fill();
+    sctx.beginPath(); sctx.arc(WW*0.78, WH*0.12, 54, 0, 6.3); sctx.fill();
+    paintClouds(t,'rgba(255,255,255,.88)');
+    paintGround('#8AD06A','#6FBB52');
+  }else if(w.id==='yoru'){
+    g=sctx.createLinearGradient(0,0,0,WH);
+    g.addColorStop(0,'#0E1730'); g.addColorStop(0.6,'#22325C'); g.addColorStop(1,'#33415C');
+    sctx.fillStyle=g; sctx.fillRect(0,0,WW,WH);
+    for(i=0;i<stars.length;i++){
+      var st=stars[i];
+      sctx.globalAlpha=0.3+0.7*Math.abs(Math.sin(t*1.1+st.t));
+      sctx.fillStyle='#FFF6D8';
+      sctx.beginPath(); sctx.arc(st.x*WW, st.y*WH, st.r,0,6.3); sctx.fill();
     }
-    var gy=WH-GH();
-    sctx.fillStyle='#8AD06A'; sctx.fillRect(0,gy,WW,GH());
-    sctx.fillStyle='#6FBB52'; sctx.fillRect(0,gy,WW,9*WORLD_K);
+    sctx.globalAlpha=1;
+    var mx=WW*0.78, my=WH*0.12, mr=50;
+    sctx.fillStyle='#FCF2C6';
+    sctx.beginPath(); sctx.arc(mx,my,mr,0,6.3); sctx.fill();
+    sctx.fillStyle='#E7DAA6';
+    sctx.beginPath();
+    sctx.arc(mx-15,my-13,9,0,6.3); sctx.arc(mx+17,my+7,13,0,6.3); sctx.arc(mx-3,my+22,7,0,6.3);
+    sctx.fill();
+    paintClouds(t,'rgba(110,130,180,.38)');
+    for(i=0;i<fireflies.length;i++){
+      var f=fireflies[i];
+      var fx=(f.x + Math.sin(t*f.s+f.p)*0.05)*WW;
+      var fy=(f.y + Math.cos(t*f.s*0.8+f.p)*0.04)*WH;
+      var a=0.3+0.7*Math.abs(Math.sin(t*2.2+f.p));
+      sctx.globalAlpha=a*0.3; sctx.fillStyle='#CFFF8F';
+      sctx.beginPath(); sctx.arc(fx,fy,10,0,6.3); sctx.fill();
+      sctx.globalAlpha=a; sctx.fillStyle='#F2FFC8';
+      sctx.beginPath(); sctx.arc(fx,fy,3.2,0,6.3); sctx.fill();
+    }
+    sctx.globalAlpha=1;
+    paintGround('#3A6B4C','#2B5138');
+  }else if(w.id==='jungle'){
+    g=sctx.createLinearGradient(0,0,0,WH);
+    g.addColorStop(0,'#1C4527'); g.addColorStop(0.45,'#3B7A44'); g.addColorStop(1,'#82B55E');
+    sctx.fillStyle=g; sctx.fillRect(0,0,WW,WH);
+    sctx.save(); sctx.globalAlpha=0.15; sctx.fillStyle='#F0FFD6';
+    for(i=0;i<6;i++){
+      var bx=(0.05+i*0.17)*WW + Math.sin(t*0.3+i)*26;
+      sctx.beginPath();
+      sctx.moveTo(bx,0); sctx.lineTo(bx+80,0); sctx.lineTo(bx+220,WH); sctx.lineTo(bx+50,WH);
+      sctx.closePath(); sctx.fill();
+    }
+    sctx.restore();
+    sctx.strokeStyle='#27542E'; sctx.lineCap='round'; sctx.lineWidth=8;
+    for(i=0;i<vines.length;i++){
+      var v=vines[i], vx=v.x*WW, vl=v.l*WH, k, xx, yy;
+      sctx.beginPath();
+      for(k=0;k<=10;k++){
+        yy=vl*k/10; xx=vx+Math.sin(t*0.6+v.p+k*0.45)*12;
+        if(k===0) sctx.moveTo(xx,yy); else sctx.lineTo(xx,yy);
+      }
+      sctx.stroke();
+      sctx.fillStyle='#4E9A47';
+      sctx.save();
+      sctx.translate(vx+Math.sin(t*0.6+v.p+4.5)*12, vl);
+      sctx.rotate(Math.sin(t*0.6+v.p)*0.3);
+      sctx.beginPath(); sctx.ellipse(0,6,17,9,0.5,0,6.3); sctx.fill();
+      sctx.restore();
+    }
+    for(i=0;i<leaves.length;i++){
+      var lf=leaves[i];
+      lf.y += lf.v*0.0012; if(lf.y>1.06){ lf.y=-0.06; lf.x=Math.random(); }
+      var lx=(lf.x+Math.sin(t*0.9+lf.p)*0.035)*WW, ly=lf.y*WH;
+      sctx.save(); sctx.translate(lx,ly); sctx.rotate(t*0.8+lf.p);
+      sctx.fillStyle='#A9D26A';
+      sctx.beginPath(); sctx.ellipse(0,0,12,5.5,0,0,6.3); sctx.fill();
+      sctx.restore();
+    }
+    paintGround('#6E9440','#557231');
   }else if(w.id==='umi'){
     g=sctx.createLinearGradient(0,0,0,WH);
     g.addColorStop(0,'#3FB5D6'); g.addColorStop(0.55,'#1E7FB5'); g.addColorStop(1,'#0E4F80');
     sctx.fillStyle=g; sctx.fillRect(0,0,WW,WH);
     sctx.save(); sctx.globalAlpha=0.12; sctx.fillStyle='#EAF9FF';
-    for(var k=0;k<4;k++){
-      var bx=(0.12+k*0.24)*WW + Math.sin(t*0.4+k)*18;
-      sctx.beginPath(); sctx.moveTo(bx,0); sctx.lineTo(bx+58,0); sctx.lineTo(bx+150,WH); sctx.lineTo(bx+20,WH);
+    for(var k2=0;k2<4;k2++){
+      var bx2=(0.12+k2*0.24)*WW + Math.sin(t*0.4+k2)*18;
+      sctx.beginPath(); sctx.moveTo(bx2,0); sctx.lineTo(bx2+58,0); sctx.lineTo(bx2+150,WH); sctx.lineTo(bx2+20,WH);
       sctx.closePath(); sctx.fill();
     }
     sctx.restore();
@@ -999,7 +1095,22 @@ function paintWorld(t){
 }
 
 /* ====================== いきもの ====================== */
-var creatures=[], parts=[], sleeping=[];
+var parts=[];
+/* いきものは ワールドごとに分けて持つ。
+   creatures / sleeping は「いま見ているワールド」の配列への参照。
+   参照が切れないよう、この2つは useWorld 以外で代入しないこと。 */
+var worldStore={};
+function slot(id){
+  if(!worldStore[id]) worldStore[id]={live:[], sleep:[]};
+  return worldStore[id];
+}
+var creatures=slot(WORLDS[0].id).live, sleeping=slot(WORLDS[0].id).sleep;
+function useWorld(){
+  var d=slot(W().id);
+  creatures=d.live; sleeping=d.sleep;
+  parts.length=0; grabs={};
+  updateCount(); updateSleep();
+}
 function srcOf(o){
   if(!o.src){ try{ o.src=o.img.toDataURL('image/png'); }catch(e){ o.src=null; } }
   return o.src;
@@ -1010,9 +1121,9 @@ function toCanvas(im){
   c.getContext('2d').drawImage(im,0,0);
   return c;
 }
-function addCreature(sp, opts){
+function makeCreature(sp, opts){
   opts=opts||{};
-  var c={
+  return {
     img:sp.img, src:sp.src||null, w:sp.w, h:sp.h, fav:!!sp.fav,
     x: opts.x!==undefined?opts.x: spawnPos().x,
     y: opts.y!==undefined?opts.y: spawnPos().y,
@@ -1020,6 +1131,9 @@ function addCreature(sp, opts){
     rot:0, rotV:(Math.random()*2-1)*0.7, squash:0, wob:Math.random()*6,
     hopT:0.5+Math.random()*1.6, held:false
   };
+}
+function addCreature(sp, opts){
+  var c=makeCreature(sp, opts);
   creatures.push(c);
   while(creatures.length>12){
     var old=creatures.shift();
@@ -1168,6 +1282,28 @@ function spawnPos(){
   var v=viewCenter();
   return { x: v.x + (Math.random()*2-1)*(SW*0.2/camS), y: v.y - (SH*0.22/camS) };
 }
+var immersive=false;
+function setImmersive(on){
+  immersive=on;
+  stageScreen.classList.toggle('immersive', on);
+  var b=$('fullBtn');
+  b.textContent = on ? '✕' : '⛶';
+  b.setAttribute('aria-label', on ? 'もとに もどす' : 'ぜんがめん');
+  /* 対応しているブラウザではブラウザ自体も全画面にする（iPhoneのSafariは非対応） */
+  try{
+    var el=document.documentElement;
+    if(on && el.requestFullscreen && !document.fullscreenElement) el.requestFullscreen();
+    else if(!on && document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+  }catch(e){}
+  requestAnimationFrame(layout);
+}
+$('fullBtn').addEventListener('click',function(){
+  ac(); setImmersive(!immersive); sfx.tap();
+  if(immersive) toast('タップで もどれるよ');
+});
+document.addEventListener('fullscreenchange',function(){
+  if(!document.fullscreenElement && immersive) setImmersive(false);
+});
 $('wZoomIn').addEventListener('click',function(){ camZoom(1.5); sfx.tap(); });
 $('wZoomOut').addEventListener('click',function(){ camZoom(1/1.5); sfx.tap(); });
 $('wZoomFit').addEventListener('click',function(){
@@ -1324,7 +1460,7 @@ $('clearAllBtn').addEventListener('click',function(){
     sleeping.push({img:c.img, src:c.src, w:c.w, h:c.h, fav:c.fav});
   }
   trimSleeping();
-  creatures=[]; updateCount(); updateSleep(); sfx.bye(); save();
+  creatures.length=0; updateCount(); updateSleep(); sfx.bye(); save();
   toast('おやすみ。「☀️ おこす」で また あえるよ');
 });
 function wakeUp(sp, x){
@@ -1474,7 +1610,7 @@ $('wakeAllBtn').addEventListener('click',function(){
   if(!sleeping.length) return;
   ac(); closeSleepBox();
   var box=sleeping.slice();
-  sleeping=[]; updateSleep();
+  sleeping.length=0; updateSleep();
   box.forEach(function(sp,i){
     setTimeout(function(){
       wakeUp(sp, toWorld(SW*(0.18+0.64*((i+0.5)/box.length)), 0).x);
@@ -1486,7 +1622,11 @@ $('wakeAllBtn').addEventListener('click',function(){
 $('worldBtn').addEventListener('click',function(){
   wi=(wi+1)%WORLDS.length;
   this.textContent=W().label;
+  useWorld();
+  closeSleepBox(); closeEditBox();
   showTip(W().tip);
+  var n=creatures.length+sleeping.length;
+  toast(n ? W().label+' の なかま '+n+'ひき' : W().label+' には まだ だれも いないよ');
   sfx.tap(); save();
 });
 $('soundBtn').addEventListener('click',function(){
@@ -1524,11 +1664,19 @@ function storageOK(){
 function save(){
   try{
     var pack=function(o){ var d=srcOf(o); return d?{d:d, w:Math.round(o.w), h:Math.round(o.h), f:o.fav?1:0}:null; };
-    var list=[], zzz=[], i, it;
-    for(i=0;i<creatures.length;i++){ it=pack(creatures[i]); if(it) list.push(it); }
-    for(i=0;i<sleeping.length;i++){ it=pack(sleeping[i]); if(it) zzz.push(it); }
-    localStorage.setItem(KEY, JSON.stringify({seeded:true, world:wi, list:list, sleep:zzz}));
+    var out={}, k, d, L, Z, i, it;
+    for(k in worldStore){
+      d=worldStore[k]; L=[]; Z=[];
+      for(i=0;i<d.live.length;i++){ it=pack(d.live[i]); if(it) L.push(it); }
+      for(i=0;i<d.sleep.length;i++){ it=pack(d.sleep[i]); if(it) Z.push(it); }
+      if(L.length || Z.length) out[k]={list:L, sleep:Z};
+    }
+    localStorage.setItem(KEY, JSON.stringify({seeded:true, v:2, world:W().id, worlds:out}));
   }catch(e){}
+}
+function idIndex(id){
+  for(var i=0;i<WORLDS.length;i++) if(WORLDS[i].id===id) return i;
+  return 0;
 }
 function load(cb){
   var raw=null;
@@ -1536,25 +1684,50 @@ function load(cb){
   if(!raw){ cb(false); return; }
   var data=null;
   try{ data=JSON.parse(raw); }catch(e){}
-  if(!data || !data.list){ cb(false); return; }
-  wi = (typeof data.world==='number' && WORLDS[data.world]) ? data.world : 0;
+  if(!data){ cb(false); return; }
+
+  var jobs=[], k, d;
+  if(data.worlds){
+    for(k in data.worlds){
+      if(!slotExists(k)) continue;
+      d=data.worlds[k];
+      (d.list||[]).forEach(function(it){ jobs.push({it:it, id:k, asleep:false}); });
+      (d.sleep||[]).forEach(function(it){ jobs.push({it:it, id:k, asleep:true}); });
+    }
+    wi = (typeof data.world==='string') ? idIndex(data.world) : 0;
+  }else if(data.list){
+    /* 旧形式（ワールド共通のひとつの群れ）からの移行。
+       当時えらんでいたワールドに、まとめて引っ越す。 */
+    var OLD=['hiru','umi','uchu'];
+    var home = OLD[(typeof data.world==='number') ? data.world : 0] || 'hiru';
+    (data.list||[]).forEach(function(it){ jobs.push({it:it, id:home, asleep:false}); });
+    (data.sleep||[]).forEach(function(it){ jobs.push({it:it, id:home, asleep:true}); });
+    wi = idIndex(home);
+  }else{
+    cb(false); return;
+  }
   $('worldBtn').textContent=W().label;
-  var awake=data.list||[], zzz=data.sleep||[];
-  var n=awake.length+zzz.length, done=0;
-  function fin(){ if(++done===n){ updateSleep(); cb(true); } }
-  if(!n){ updateSleep(); cb(true); return; }
-  function restore(it, asleep){
+  useWorld();
+
+  var n=jobs.length, done=0;
+  function fin(){ if(++done===n){ useWorld(); cb(true); } }
+  if(!n){ useWorld(); cb(true); return; }
+  jobs.forEach(function(job){
     var im=new Image();
     im.onload=function(){
-      var sp={img:toCanvas(im), src:it.d, w:it.w, h:it.h, fav:!!it.f};
-      if(asleep) sleeping.push(sp); else addCreature(sp);
+      var sp={img:toCanvas(im), src:job.it.d, w:job.it.w, h:job.it.h, fav:!!job.it.f};
+      var box=slot(job.id);
+      if(job.asleep) box.sleep.push(sp);
+      else box.live.push(makeCreature(sp));
       fin();
     };
     im.onerror=fin;
-    im.src=it.d;
-  }
-  awake.forEach(function(it){ restore(it,false); });
-  zzz.forEach(function(it){ restore(it,true); });
+    im.src=job.it.d;
+  });
+}
+function slotExists(id){
+  for(var i=0;i<WORLDS.length;i++) if(WORLDS[i].id===id) return true;
+  return false;
 }
 
 /* ====================== みほんの いきもの ====================== */

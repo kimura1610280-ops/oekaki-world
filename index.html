@@ -1096,18 +1096,20 @@ function paintWorld(t){
 
 /* ====================== いきもの ====================== */
 var parts=[];
-/* いきものは ワールドごとに分けて持つ。
-   creatures / sleeping は「いま見ているワールド」の配列への参照。
-   参照が切れないよう、この2つは useWorld 以外で代入しないこと。 */
+/* 1ぴきは どこか1か所にしかいない。
+   起きている子は そのワールドにだけいて、
+   おやすみ中の子は ぜんぶのワールドで共通のボックスに入る。
+   だから 昼でねかせた子を ジャングルで起こせば、その子は引っこす。
+   creatures は「いま見ているワールド」の配列への参照。useWorld 以外で代入しないこと。 */
 var worldStore={};
 function slot(id){
-  if(!worldStore[id]) worldStore[id]={live:[], sleep:[]};
+  if(!worldStore[id]) worldStore[id]={live:[]};
   return worldStore[id];
 }
-var creatures=slot(WORLDS[0].id).live, sleeping=slot(WORLDS[0].id).sleep;
+var sleeping=[];                                  // 共通のおやすみボックス
+var creatures=slot(WORLDS[0].id).live;
 function useWorld(){
-  var d=slot(W().id);
-  creatures=d.live; sleeping=d.sleep;
+  creatures=slot(W().id).live;
   parts.length=0; grabs={};
   updateCount(); updateSleep();
 }
@@ -1625,8 +1627,13 @@ $('worldBtn').addEventListener('click',function(){
   useWorld();
   closeSleepBox(); closeEditBox();
   showTip(W().tip);
-  var n=creatures.length+sleeping.length;
-  toast(n ? W().label+' の なかま '+n+'ひき' : W().label+' には まだ だれも いないよ');
+  if(creatures.length){
+    toast(W().label+' の なかま '+creatures.length+'ひき');
+  }else if(sleeping.length){
+    toast(W().label+' には だれも いない。☀️おこす で よべるよ');
+  }else{
+    toast(W().label+' には まだ だれも いないよ');
+  }
   sfx.tap(); save();
 });
 $('soundBtn').addEventListener('click',function(){
@@ -1664,14 +1671,14 @@ function storageOK(){
 function save(){
   try{
     var pack=function(o){ var d=srcOf(o); return d?{d:d, w:Math.round(o.w), h:Math.round(o.h), f:o.fav?1:0}:null; };
-    var out={}, k, d, L, Z, i, it;
+    var out={}, zzz=[], k, d, L, i, it;
     for(k in worldStore){
-      d=worldStore[k]; L=[]; Z=[];
+      d=worldStore[k]; L=[];
       for(i=0;i<d.live.length;i++){ it=pack(d.live[i]); if(it) L.push(it); }
-      for(i=0;i<d.sleep.length;i++){ it=pack(d.sleep[i]); if(it) Z.push(it); }
-      if(L.length || Z.length) out[k]={list:L, sleep:Z};
+      if(L.length) out[k]={list:L};
     }
-    localStorage.setItem(KEY, JSON.stringify({seeded:true, v:2, world:W().id, worlds:out}));
+    for(i=0;i<sleeping.length;i++){ it=pack(sleeping[i]); if(it) zzz.push(it); }
+    localStorage.setItem(KEY, JSON.stringify({seeded:true, v:3, world:W().id, worlds:out, sleep:zzz}));
   }catch(e){}
 }
 function idIndex(id){
@@ -1692,8 +1699,10 @@ function load(cb){
       if(!slotExists(k)) continue;
       d=data.worlds[k];
       (d.list||[]).forEach(function(it){ jobs.push({it:it, id:k, asleep:false}); });
+      /* v2 は おやすみもワールド別だった。共通ボックスにまとめる */
       (d.sleep||[]).forEach(function(it){ jobs.push({it:it, id:k, asleep:true}); });
     }
+    (data.sleep||[]).forEach(function(it){ jobs.push({it:it, id:null, asleep:true}); });
     wi = (typeof data.world==='string') ? idIndex(data.world) : 0;
   }else if(data.list){
     /* 旧形式（ワールド共通のひとつの群れ）からの移行。
@@ -1716,9 +1725,8 @@ function load(cb){
     var im=new Image();
     im.onload=function(){
       var sp={img:toCanvas(im), src:job.it.d, w:job.it.w, h:job.it.h, fav:!!job.it.f};
-      var box=slot(job.id);
-      if(job.asleep) box.sleep.push(sp);
-      else box.live.push(makeCreature(sp));
+      if(job.asleep) sleeping.push(sp);
+      else slot(job.id).live.push(makeCreature(sp));
       fin();
     };
     im.onerror=fin;

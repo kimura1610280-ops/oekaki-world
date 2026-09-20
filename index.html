@@ -174,15 +174,6 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
 }
 .brushDot{border-radius:50%;background:var(--ink);}
 .brushName{font-size:11px;font-weight:700;color:var(--ink-2);}
-.sizes{display:flex;gap:6px;}
-.sz{
-  width:46px;height:var(--tap);background:var(--chrome);border-radius:14px;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 3px 0 var(--btn-drop);transition:transform .08s;
-}
-.sz[aria-pressed="true"]{background:var(--yellow);}
-.sz:active{transform:translateY(2px);}
-.sz i{display:block;border-radius:50%;background:var(--ink);}
 .tool{
   min-height:var(--tap);padding:0 15px;background:var(--chrome);border-radius:14px;
   font-weight:700;font-size:15px;box-shadow:0 3px 0 var(--btn-drop);
@@ -347,7 +338,6 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
   .paperWrap{margin:8px 10px 0;}
   .brushBox{min-width:56px;}
   .brushName{font-size:10px;}
-  .sz{width:40px;}
   .tool{padding:0 10px;font-size:13px;}
   .big{font-size:15px;padding:0 14px;}
 }
@@ -460,7 +450,10 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
           <span class="brushDot" id="brushDot"></span>
           <span class="brushName" id="brushName">あか</span>
         </div>
-        <div class="sizes" id="sizes"></div>
+        <label class="opa">
+          <span class="opaName">ふとさ</span>
+          <input type="range" id="sizeRange" min="3" max="72" value="16" step="1" aria-label="ふでの ふとさ">
+        </label>
         <label class="opa">
           <span class="opaName">こさ</span>
           <input type="range" id="alphaRange" min="15" max="100" value="100" step="5" aria-label="いろの こさ">
@@ -571,8 +564,7 @@ var COLORS=[
   ['みどり','#2FA84F'],['みずいろ','#48C0E8'],['あお','#2A6FD6'],['むらさき','#8B57C7'],
   ['ピンク','#F07AB0'],['ちゃいろ','#8B5A2B'],['くろ','#2B2B33'],['しろ','#FFFFFF']
 ];
-var SIZES=[['ほそい',7],['ふつう',16],['ふとい',32]];
-var color=COLORS[0][1], colorName=COLORS[0][0], size=SIZES[1][1];
+var color=COLORS[0][1], colorName=COLORS[0][0], size=16;
 var alpha=1, erasing=false, filling=false;
 var strokes=[], cur=null, penSeen=false;
 
@@ -648,27 +640,16 @@ COLORS.forEach(function(c,i){
   });
   palette.appendChild(b);
 });
-var sizesEl=$('sizes');
-SIZES.forEach(function(sz,i){
-  var b=document.createElement('button');
-  b.className='sz'; b.setAttribute('aria-label',sz[0]);
-  b.setAttribute('aria-pressed', i===1?'true':'false');
-  var d=Math.max(7,Math.min(26,sz[1]));
-  b.innerHTML='<i style="width:'+d+'px;height:'+d+'px"></i>';
-  b.addEventListener('click',function(){
-    size=sz[1];
-    Array.prototype.forEach.call(sizesEl.children,function(el){ el.setAttribute('aria-pressed','false'); });
-    b.setAttribute('aria-pressed','true');
-    updateBrush(); sfx.tap();
-  });
-  sizesEl.appendChild(b);
+$('sizeRange').addEventListener('input',function(){
+  size=parseInt(this.value,10)||16;
+  updateBrush();
 });
 $('alphaRange').addEventListener('input',function(){
   alpha=Math.max(0.05, this.value/100);
   updateBrush();
 });
 function updateBrush(){
-  var d=clamp(size,8,30), dot=$('brushDot');
+  var d=clamp(size,6,34), dot=$('brushDot');
   dot.style.width=d+'px'; dot.style.height=d+'px';
   dot.style.background= erasing ? 'var(--line)' : color;
   dot.style.opacity = erasing ? 1 : alpha;
@@ -808,9 +789,11 @@ function floodFill(ax,ay,hex,al){
   var openStart = sa<30;
   function match(j){
     var a=d[j+3];
-    if(openStart) return a<90;
+    if(openStart) return a<70;           // 少しでも線が乗っていたら そこで止まる
     if(a<30) return false;
-    return Math.abs(d[j]-sr)+Math.abs(d[j+1]-sg)+Math.abs(d[j+2]-sb)+Math.abs(a-sa) < 120;
+    /* 前に塗った所から塗り直すとき。ゆるく見ると となりの色の線
+       （あかとオレンジなど）を線と見なせず、はみ出してしまうので厳しく見る */
+    return Math.abs(d[j]-sr)+Math.abs(d[j+1]-sg)+Math.abs(d[j+2]-sb)+Math.abs(a-sa) < 45;
   }
   var seen=new Uint8Array(W*H), stack=[x0,y0], filled=0;
   while(stack.length){
@@ -839,6 +822,29 @@ function floodFill(ax,ay,hex,al){
     }
   }
   if(!filled) return false;
+  /* 線のふち（うっすら色がのっている点）は、そのままだと白いすき間に見える。
+     その点の下に塗った色を敷いて、線のなめらかさを保ったまま すき間を消す */
+  for(var pass=0; pass<3; pass++){
+    var add=[], yy, xx, idx, j4;
+    for(yy=0; yy<H; yy++){
+      for(xx=0; xx<W; xx++){
+        idx=yy*W+xx;
+        if(seen[idx]) continue;
+        if(d[idx*4+3]>=252) continue;      // しっかりした線の中までは入らない
+        if((xx>0 && seen[idx-1]) || (xx<W-1 && seen[idx+1]) ||
+           (yy>0 && seen[idx-W]) || (yy<H-1 && seen[idx+W])) add.push(idx);
+      }
+    }
+    if(!add.length) break;
+    for(var ai=0; ai<add.length; ai++){
+      idx=add[ai]; seen[idx]=1; j4=idx*4;
+      var av=d[j4+3]/255;
+      d[j4]   = Math.round(d[j4]  *av + fc.r*(1-av));
+      d[j4+1] = Math.round(d[j4+1]*av + fc.g*(1-av));
+      d[j4+2] = Math.round(d[j4+2]*av + fc.b*(1-av));
+      d[j4+3] = Math.max(d[j4+3], fa);
+    }
+  }
   actx.save(); actx.setTransform(1,0,0,1,0,0);
   actx.putImageData(id,0,0); actx.restore();
   return true;
@@ -938,6 +944,7 @@ dcv.addEventListener('pointermove',function(e){
   }
   if(e.pointerId!==drawId || !cur) return;
   var evts = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+  if(!evts.length) evts=[e];   // 取れないブラウザ用の保険
   var moved=false;
   for(var i=0;i<evts.length;i++){
     var q=pos(dcv,evts[i]);
@@ -1105,14 +1112,15 @@ var WORLDS=[
   {id:'yoru', label:'🌙 よる', gravity:1600, drag:0.999, wrap:false, hop:true, groundH:74,
    tip:'くらくても <b>じゅうりょくは おなじ</b>。おちかたは ひると かわらないよ。'},
   {id:'jungle', label:'🌴 ジャングル', gravity:1600, drag:0.999, wrap:false, hop:true, groundH:86,
-   tip:'木の <b>あしば</b>に のれるよ。たかい ところから とびおりてみよう。',
+   tip:'大きな木の <b>えだ</b>に ジャンプして のぼれるよ。',
+   trees:[{x:0.17,top:0.13},{x:0.55,top:0.07},{x:0.88,top:0.15}],
    plats:[
-     {x:0.05,y:0.70,w:0.22},{x:0.40,y:0.63,w:0.24},{x:0.74,y:0.72,w:0.21},
-     {x:0.20,y:0.47,w:0.21},{x:0.56,y:0.41,w:0.23},
-     {x:0.34,y:0.25,w:0.19},{x:0.70,y:0.20,w:0.18}
+     {x:0.17,y:0.68,w:0.20},{x:0.17,y:0.50,w:0.16},{x:0.17,y:0.33,w:0.13},
+     {x:0.38,y:0.60,w:0.17},{x:0.55,y:0.44,w:0.19},{x:0.41,y:0.28,w:0.14},
+     {x:0.67,y:0.71,w:0.21},{x:0.72,y:0.54,w:0.16},{x:0.75,y:0.37,w:0.13}
    ]},
-  {id:'umi', label:'🌊 うみ', gravity:240, drag:0.90, wrap:false, hop:false, floaty:true, groundH:58,
-   tip:'ぬりつぶした子は <b>おもくて しずむ</b>。線だけの子は かるくて <b>うかぶ</b>よ。'},
+  {id:'umi', label:'🌊 うみ', gravity:0, drag:0.93, wrap:false, hop:false, swim:true, groundH:58,
+   tip:'水の中は ふわふわ。みんな <b>およいで</b> いるよ。'},
   {id:'uchu', label:'🚀 うちゅう', gravity:0, drag:1, wrap:true, spin:true, groundH:0,
    tip:'うちゅうは じゅうりょくが ほとんど ない。なげたら <b>ずーっと まっすぐ</b> すすむよ。'}
 ];
@@ -1199,21 +1207,28 @@ function paintWorld(t){
       sctx.closePath(); sctx.fill();
     }
     sctx.restore();
-    sctx.strokeStyle='#27542E'; sctx.lineCap='round'; sctx.lineWidth=8;
-    for(i=0;i<vines.length;i++){
-      var v=vines[i], vx=v.x*WW, vl=v.l*WH, k, xx, yy;
+    var tr=w.trees||[], base=WH-GH();
+    for(i=0;i<tr.length;i++){
+      var tx=tr[i].x*WW, topY=tr[i].top*WH, bw=36, tw=19;
+      sctx.fillStyle='#4A2F1C';
       sctx.beginPath();
-      for(k=0;k<=10;k++){
-        yy=vl*k/10; xx=vx+Math.sin(t*0.6+v.p+k*0.45)*12;
-        if(k===0) sctx.moveTo(xx,yy); else sctx.lineTo(xx,yy);
+      sctx.moveTo(tx-bw, base);
+      sctx.quadraticCurveTo(tx-tw*1.3, (base+topY)*0.5, tx-tw, topY);
+      sctx.lineTo(tx+tw, topY);
+      sctx.quadraticCurveTo(tx+tw*1.3, (base+topY)*0.5, tx+bw, base);
+      sctx.closePath(); sctx.fill();
+      sctx.strokeStyle='rgba(28,16,8,.32)'; sctx.lineWidth=3;
+      sctx.beginPath(); sctx.moveTo(tx-7,base); sctx.lineTo(tx-4,topY); sctx.stroke();
+      sctx.beginPath(); sctx.moveTo(tx+9,base); sctx.lineTo(tx+6,topY+30); sctx.stroke();
+      sctx.fillStyle='#35793A';
+      for(var cb=0; cb<7; cb++){
+        var ab=cb/7*Math.PI*2;
+        sctx.beginPath();
+        sctx.ellipse(tx+Math.cos(ab)*56, topY-16+Math.sin(ab)*32, 48, 31, ab*0.3, 0, 6.3);
+        sctx.fill();
       }
-      sctx.stroke();
-      sctx.fillStyle='#4E9A47';
-      sctx.save();
-      sctx.translate(vx+Math.sin(t*0.6+v.p+4.5)*12, vl);
-      sctx.rotate(Math.sin(t*0.6+v.p)*0.3);
-      sctx.beginPath(); sctx.ellipse(0,6,17,9,0.5,0,6.3); sctx.fill();
-      sctx.restore();
+      sctx.fillStyle='#52A247';
+      sctx.beginPath(); sctx.ellipse(tx, topY-26, 62, 38, 0, 0, 6.3); sctx.fill();
     }
     for(i=0;i<leaves.length;i++){
       var lf=leaves[i];
@@ -1356,27 +1371,46 @@ function burst(x,y,col){
 }
 
 /* 着地したときの処理（地面も木の足場も同じ） */
+/* 近くの えだを ひとつ選ぶ（とどく高さ・きょりのものだけ） */
+function pickBranch(c, w){
+  if(!w.plats) return null;
+  var list=[], i;
+  for(i=0;i<w.plats.length;i++){
+    var q=w.plats[i], qx=q.x*WW, qw=q.w*WW, qy=q.y*WH;
+    var cx2=qx+qw*0.5;
+    var rise=(c.y+c.h/2)-qy;
+    if(rise<50 || rise>430) continue;
+    if(Math.abs(cx2-c.x)>470) continue;
+    list.push({cx:cx2, y:qy});
+  }
+  if(!list.length) return null;
+  return list[(Math.random()*list.length)|0];
+}
 function landOn(c, topY, w, dt){
   c.y = topY - c.h/2;
   c.onG = true;
   if(c.vy>240){ c.squash=clamp(c.vy/2600,0.08,0.42); sfx.land(c.vy); }
-  c.vy = -c.vy*(w.floaty?0.35:0.56);
+  c.vy = -c.vy*(w.swim?0.3:0.56);
   if(Math.abs(c.vy)<90) c.vy=0;
   c.vx *= 0.88;
   if(w.hop){
     c.hopT-=dt;
     if(c.hopT<=0 && Math.abs(c.vy)<1){
-      c.vy = -(560+Math.random()*340);
-      c.vx += (Math.random()*2-1)*200;
+      /* えだがある世界では、たまに ねらって とびのる */
+      var tgt = (Math.random()<0.7) ? pickBranch(c,w) : null;
+      if(tgt){
+        var rise=(c.y+c.h/2)-tgt.y;
+        c.vy = -Math.sqrt(2*w.gravity*(rise+80));
+        var tUp = -c.vy/w.gravity;
+        c.vx = clamp((tgt.cx-c.x)/Math.max(0.18,tUp), -760, 760);
+      }else{
+        c.vy = -(560+Math.random()*340);
+        c.vx += (Math.random()*2-1)*200;
+      }
       c.squash=-0.2;
       c.hopT=1.1+Math.random()*2.4;
     }
   }
-}
-/* 水の中で うかぶ・しずむ。ぬりつぶすほど おもい（dens が大きい） */
-function buoyOf(c, w){
-  var dens = (c.dens===undefined) ? 0.3 : c.dens;
-  return Math.max(0, w.gravity + 1200*(0.35 - dens));
 }
 var bumpT=0;
 var foods=[];           // いま落ちている えさ
@@ -1398,10 +1432,20 @@ function step(dt,t){
     c.wob += dt*2.1;
     if(c===placing){ c.rot*=0.9; continue; }
     c.vy += w.gravity*dt;
-    if(w.floaty){
-      c.vy -= buoyOf(c,w)*dt;
-      c.vx += Math.sin(c.wob)*26*dt;
-      c.vy += Math.cos(c.wob*0.83)*22*dt;
+    if(w.swim){
+      /* およぐ：ときどき向きを変えて、ふわふわ進む。沈みも浮きもしない */
+      c.swimT = (c.swimT===undefined) ? 0 : c.swimT-dt;
+      if(c.swimT<=0){
+        c.swimA = Math.random()*Math.PI*2;
+        c.swimP = 90+Math.random()*130;
+        c.swimT = 1.4+Math.random()*2.6;
+      }
+      c.vx += Math.cos(c.swimA)*c.swimP*dt;
+      c.vy += Math.sin(c.swimA)*c.swimP*dt*0.7;
+      c.vy += Math.sin(c.wob*1.25)*34*dt;      // ひれの上下
+      /* 上や下のはしに近づいたら やさしく戻す */
+      if(c.y < WH*0.12) c.vy += 120*dt;
+      if(c.y > WH*0.92) c.vy -= 160*dt;
     }
     var d=Math.pow(w.drag, dt*60);
     c.vx*=d; c.vy*=d;
@@ -1428,7 +1472,7 @@ function step(dt,t){
         }
       }
       if(c.y+hh>groundY) landOn(c, groundY, w, dt);
-      if(w.floaty) c.rot = Math.sin(c.wob)*0.2;
+      if(w.swim) c.rot = Math.sin(c.wob)*0.16 + clamp(c.vx*0.0006,-0.3,0.3);
       else c.rot += (clamp(c.vx*0.0004,-0.4,0.4)-c.rot)*Math.min(1,dt*8);
     }
   }
@@ -1436,7 +1480,7 @@ function step(dt,t){
   for(var fi=foods.length-1;fi>=0;fi--){
     var f=foods[fi];
     if(f.gone){ foods.splice(fi,1); continue; }
-    f.vy += (w.floaty ? w.gravity*0.25 : w.gravity)*dt;
+    f.vy += (w.swim ? 90 : w.gravity)*dt;
     var fd=Math.pow(w.drag, dt*60);
     f.vx*=fd; f.vy*=fd;
     var fPrev=f.y+f.h/2;
@@ -1475,7 +1519,7 @@ function step(dt,t){
       if(!best) continue;
       var ddx=best.x-cc.x, ddy=best.y-cc.y, dn=Math.max(1,bd);
       cc.vx += (ddx/dn)*1100*dt;
-      if(w.floaty || w.wrap){
+      if(w.swim || w.wrap){
         cc.vy += (ddy/dn)*900*dt;
       }else if(ddy < -30 && cc.onG){
         cc.vy = -(520+Math.random()*220);
@@ -1485,7 +1529,7 @@ function step(dt,t){
         best.gone=true;
         cc.squash=0.34;
         burst(best.x,best.y,'#FFD16E'); burst(best.x,best.y,'#B6E36A');
-        var grow=Math.min(1.05, 330/Math.max(cc.w,cc.h));
+        var grow=Math.min(1.05, 560/Math.max(cc.w,cc.h));
         cc.w*=grow; cc.h*=grow;
         sfx.chomp();
         setTimeout(function(){ save(); }, 60);
@@ -1929,7 +1973,7 @@ function endPlacing(){
 function resizePlacing(f){
   if(!placing) return;
   var m=Math.max(placing.w,placing.h);
-  var want=clamp(m*f, 50, 330), k=want/m;
+  var want=clamp(m*f, 50, 560), k=want/m;
   placing.w*=k; placing.h*=k;
 }
 $('placeBig').addEventListener('click',function(){ resizePlacing(1.25); sfx.tap(); });

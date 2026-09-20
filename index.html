@@ -127,8 +127,16 @@ button:focus-visible{outline:3px solid var(--accent-2);outline-offset:3px;}
   box-shadow:0 6px 18px rgba(20,25,40,.25);text-align:center;
   opacity:0;transition:opacity .35s,transform .35s;pointer-events:none;
 }
-.tip.on{opacity:1;transform:translateX(-50%) translateY(4px);}
+.tip.on{opacity:1;transform:translateX(-50%) translateY(4px);pointer-events:auto;cursor:pointer;}
+.tip:active{transform:translateX(-50%) translateY(6px) scale(.98);}
 .tip b{color:var(--accent);}
+.tipX{
+  position:absolute;right:-9px;top:-9px;
+  width:27px;height:27px;border-radius:50%;
+  background:var(--ink);color:var(--desk);
+  font-size:14px;font-weight:800;line-height:27px;text-align:center;
+  box-shadow:0 2px 6px rgba(20,25,40,.35);
+}
 
 /* ---------- おえかき ---------- */
 .paperWrap{flex:1;min-height:0;position:relative;margin:12px 12px 0;}
@@ -1629,7 +1637,7 @@ $('worldBtn').addEventListener('click',function(){
   this.textContent=W().label;
   useWorld();
   closeSleepBox(); closeEditBox();
-  showTip(W().tip);
+  showTip(W().id, W().tip);
   if(creatures.length){
     toast(W().label+' の なかま '+creatures.length+'ひき');
   }else if(sleeping.length){
@@ -1658,12 +1666,22 @@ function toast(msg){
   },2600);
 }
 var tipT=null;
-function showTip(html){
-  var el=$('tip');
-  el.innerHTML=html; el.classList.add('on');
+/* ワールドの説明は はじめて来たときだけ出す。タップですぐ消せる。 */
+var tipSeen={};
+function hideTip(){
   clearTimeout(tipT);
-  tipT=setTimeout(function(){ el.classList.remove('on'); },5200);
+  $('tip').classList.remove('on');
 }
+function showTip(id, html){
+  if(tipSeen[id]) return;
+  tipSeen[id]=1; save();
+  var el=$('tip');
+  el.innerHTML = html + '<span class="tipX">\u2715</span>';
+  el.classList.add('on');
+  clearTimeout(tipT);
+  tipT=setTimeout(hideTip, 9000);
+}
+$('tip').addEventListener('click', function(){ hideTip(); sfx.tap(); });
 
 /* ====================== ほぞん ====================== */
 var KEY='oekaki-world-v1';
@@ -1681,7 +1699,7 @@ function save(){
       if(L.length) out[k]={list:L};
     }
     for(i=0;i<sleeping.length;i++){ it=pack(sleeping[i]); if(it) zzz.push(it); }
-    localStorage.setItem(KEY, JSON.stringify({seeded:true, v:3, world:W().id, worlds:out, sleep:zzz}));
+    localStorage.setItem(KEY, JSON.stringify({seeded:true, v:3, world:W().id, worlds:out, sleep:zzz, tips:Object.keys(tipSeen)}));
   }catch(e){}
 }
 function idIndex(id){
@@ -1695,6 +1713,7 @@ function load(cb){
   var data=null;
   try{ data=JSON.parse(raw); }catch(e){}
   if(!data){ cb(false); return; }
+  (data.tips||[]).forEach(function(k){ tipSeen[k]=1; });
 
   var jobs=[], k, d;
   if(data.worlds){
@@ -1784,6 +1803,7 @@ requestAnimationFrame(function(){
       addCreature(doodle('#2E86D6',0), {x:SW*0.36, y:SH*0.35});
       addCreature(doodle('#FF7A3D',1), {x:SW*0.64, y:SH*0.28});
       setTimeout(function(){ toast('これは みほん。じぶんで かいてみよう！'); }, 700);
+      setTimeout(function(){ showTip(W().id, W().tip); }, 2200);
     }
     updateCount();
   });
